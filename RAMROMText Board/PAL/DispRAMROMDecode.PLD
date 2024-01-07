@@ -1,0 +1,45 @@
+Name      DispRAMROMDecode;
+Partno    ;
+Date      28/12/2023;
+Revision  0.1;
+Designer  PM;
+Company   ;
+Assembly  ;
+Location  ;
+Device    g16v8;
+
+
+/** Inputs **/
+Pin 1 = LA13;
+Pin 2 = LA14;
+Pin 3 = LA15;
+Pin 4 = LA16;
+Pin 5 = LA17;
+Pin 6 = LA18;
+Pin 7 = LA19;
+Pin 8 = LA20;
+Pin 9 = LA21;
+Pin 12 = nBUFCTL;
+Pin 13 = nLBS_MEM;
+
+/** Outputs **/
+Pin 19 = RAM_EN;
+Pin 18 = ROM_EN;
+Pin 17 = CHAR_DISP_EN;
+Pin 16 = DISP_LED;
+Pin 15 = ROM_LED;
+Pin 14 = RAM_LED;
+
+/** Logic equations **/
+!RAM_EN       = !nLBS_MEM & !LA15;
+!RAM_LED      = !nLBS_MEM & !LA15;
+CHAR_DISP_EN  = !nLBS_MEM & LA15 & !LA14 & LA13;
+!DISP_LED     = !nLBS_MEM & LA15 & !LA14 & LA13;
+!ROM_EN       = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;
+!ROM_LED      = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;
+
+
+
+
+
+

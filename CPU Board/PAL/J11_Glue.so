@@ -1,0 +1,183 @@
+CSIM(WM): CUPL Simulation Program
+Version 5.0a Serial# 
+Copyright (c) 1983, 1998 Logical Devices, Inc.
+CREATED Sat Jul 29 09:42:17 2023
+
+LISTING FOR SIMULATION FILE: J11_Glue.si
+
+   1: Name     J11_Glue;
+   2: PartNo   CA0099;
+   3: Date     29/07/23;
+   4: Revision 01;
+   5: Designer Jayne;
+   6: Company  JAMS;
+   7: Assembly None;
+   8: Location None;
+   9: Device   g22V10;
+  10: 
+  11: 
+  12: ORDER: nSCTL, nBUFCTL, nALE, nIO6, nIO4, nIO2, nIO0, SCTL, BUFCTL, nBUFCTL2, ALE, nWE_RAM, nTBRL, US310EN, nDDR_nRDENB, US34EN; 
+  13: 
+  14: 
+
+=========================
+                    n    
+                    D    
+                    D    
+               n    R    
+       n       B n U_    
+       B      BU W SnU   
+      nU      UF En3RS   
+      SFnnnnnSFC _T1D3   
+      CCAIIIICCTARB0E4   
+      TTLOOOOTTLLARENE   
+      LLE6420LL2EMLNBN   
+=========================
+0001: 00*0***HHLXHHXXX
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0002: 10*0***LHLXHHXXX
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0003: 01*0***HLHXLLLHL
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0004: 11*0***LLHXHHLHL
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0005: 00*1***HHLXHHXXX
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0006: 10*1***LHLXHHXXX
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0007: 01*1***HLHXLHLHL
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0008: 11*1***LLHXHHLHL
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0009: 00*0***HHLXHHXXX
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0010: 10*0***LHLXHHXXX
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0011: 01*0***HLHXLLLHL
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0012: 11*0***LLHXHHLHL
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0013: 00*1***HHLXHHXXX
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0014: 10*1***LHLXHHXXX
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0015: 01*1***HLHXLHLHL
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0016: 11*1***LLHXHHLHL
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0017: 00*0***HHLXHHXXX
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0018: 10*0***LHLXHHXXX
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0019: 01*0***HLHXLLLHL
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0020: 11*0***LLHXHHLHL
+        ^ ^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+
+0021: 00*****HHLXHHXXX
+        ^^^^^
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+[0021sa] invalid test value:  *
+

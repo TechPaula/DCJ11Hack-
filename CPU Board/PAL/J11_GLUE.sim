@@ -1,0 +1,79 @@
+%SIGNAL
+PIN  20 =  ALE 
+PIN  22 =  BUFCTL 
+PIN  23 =  SCTL 
+PIN  17 =  US310EN 
+PIN  15 =  US34EN 
+PIN   4 =  nALE 
+PIN   3 =  nBUFCTL 
+PIN  21 =  nBUFCTL2 
+PIN  16 =  nDDR_nRDENB 
+PIN   8 =  nIO0 
+PIN   7 =  nIO2 
+PIN   6 =  nIO4 
+PIN   5 =  nIO6 
+PIN   2 =  nSCTL 
+PIN  18 =  nTBRL 
+PIN  19 =  nWE_RAM 
+%END
+
+%FIELD
+%END
+
+%EQUATION
+ALE =>
+    !nALE
+
+BUFCTL =>
+    !nBUFCTL
+
+SCTL =>
+    !nSCTL
+
+US310EN =>
+    !nBUFCTL2 & !nIO4
+
+US34EN =>
+    !nBUFCTL2 & !nIO0
+
+nBUFCTL2 =>
+    !BUFCTL
+
+nDDR_nRDENB =>
+    nBUFCTL2
+  # nIO2
+
+!nTBRL =>
+    !BUFCTL & SCTL & !nIO6
+
+nWE_RAM =>
+    SCTL & nBUFCTL2
+
+ALE.oe  =>
+    1 
+
+BUFCTL.oe  =>
+    1 
+
+SCTL.oe  =>
+    1 
+
+US310EN.oe  =>
+    1 
+
+US34EN.oe  =>
+    1 
+
+nBUFCTL2.oe  =>
+    1 
+
+nDDR_nRDENB.oe  =>
+    1 
+
+nTBRL.oe  =>
+    1 
+
+nWE_RAM.oe  =>
+    1 
+
+%END

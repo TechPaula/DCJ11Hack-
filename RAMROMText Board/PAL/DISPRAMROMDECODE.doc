@@ -1,0 +1,72 @@
+
+*******************************************************************************
+                               DispRAMROMDecode
+*******************************************************************************
+
+CUPL(WM)        5.0a Serial# 60008009
+Device          g16v8s  Library DLIB-h-40-9
+Created         Sat Dec 30 17:00:22 2023
+Name            DispRAMROMDecode
+Partno          
+Revision        0.1
+Date            28/12/2023
+Designer        PM
+Company         
+Assembly        
+Location        
+
+===============================================================================
+                            Expanded Product Terms
+===============================================================================
+
+CHAR_DISP_EN =>
+    LA13 & !LA14 & LA15 & !nLBS_MEM
+
+!DISP_LED =>
+    LA13 & !LA14 & LA15 & !nLBS_MEM
+
+!RAM_EN =>
+    !LA15 & !nLBS_MEM
+
+!RAM_LED =>
+    !LA15 & !nLBS_MEM
+
+!ROM_EN =>
+    !LA13 & LA14 & LA15 & !nBUFCTL & !nLBS_MEM
+
+!ROM_LED =>
+    !LA13 & LA14 & LA15 & !nBUFCTL & !nLBS_MEM
+
+
+===============================================================================
+                                 Symbol Table
+===============================================================================
+
+Pin Variable                                    Pterms   Max     Min    
+Pol   Name              Ext     Pin     Type     Used   Pterms  Level   
+--- --------            ---     ---     ----    ------  ------  -----   
+
+    CHAR_DISP_EN                17       V        1       8       1     
+    DISP_LED                    16       V        1       8       1     
+    LA13                        1        V        -       -       -     
+    LA14                        2        V        -       -       -     
+    LA15                        3        V        -       -       -     
+    LA16                        4        V        -       -       -     
+    LA17                        5        V        -       -       -     
+    LA18                        6        V        -       -       -     
+    LA19                        7        V        -       -       -     
+    LA20                        8        V        -       -       -     
+    LA21                        9        V        -       -       -     
+    RAM_EN                      19       V        1       8       1     
+    RAM_LED                     14       V        1       8       1     
+    ROM_EN                      18       V        1       8       1     
+    ROM_LED                     15       V        1       8       1     
+    nBUFCTL                     12       V        -       -       -     
+    nLBS_MEM                    13       V        -       -       -     
+
+
+LEGEND    D : default variable         F : field      G : group
+          I : intermediate variable    N : node       M : extended node
+          U : undefined                V : variable   X : extended variable
+          T : function
+

@@ -1,0 +1,62 @@
+Name      J11_Glue;
+Partno    CA0099;
+Date      29/07/23;
+Revision  01;
+Designer  Jayne;
+Company   JAMS;
+Assembly  None;
+Location  None;
+Device    g22V10;
+
+/*********************************************************************/
+/* Compiling Note: For this Design , it will compile without any     */
+/* Errors if you Click on Options from the Main WInCUPL tool window  */
+/* and Select Compiler option and set Minimization button to PRESTO  */   
+/*                                                                   */
+/* Binary Counter                                                    */
+/*                                                                   */
+/* This is a 6-bit binary counter with synchronous clear capability  */
+/* and synchronous pre-load.  An asynchronous ripple carry output    */
+/* is provided for cascading multiple devices. Operation is similar  */
+/* to the 4 bit 74XX163                                              */
+/*********************************************************************/
+
+/**  Inputs  **/
+/**  UNUSED INPUTS TO BE PULLED UP OR DOWN  **/
+
+Pin 2 = nSCTL;
+Pin 3 = nBUFCTL;
+Pin 4 = nALE;
+Pin 5 = nIO6;
+Pin 6 = nIO4;
+Pin 7 = nIO2;
+Pin 8 = nIO0;
+
+
+/** Outputs **/
+Pin 23 = SCTL;
+Pin 22 = BUFCTL;			
+Pin 21 = nBUFCTL2;			
+Pin 20 = ALE;			
+Pin 19 = nWE_RAM;
+Pin 18 = nTBRL;
+Pin 17 = US310EN;
+Pin 16 = nDDR_nRDENB;
+Pin 15 = US34EN;
+
+
+/** Logic Equations **/
+
+
+SCTL 		= !nSCTL;
+BUFCTL 	= !nBUFCTL;
+nBUFCTL2	= !BUFCTL;
+ALE		= !nALE;
+nWE_RAM	= !(SCTL & nBUFCTL2);
+!nTBRL 	= SCTL & !nIO6 & !BUFCTL;
+US310EN	= !nIO4 & !nBUFCTL2;
+nDDR_nRDENB  	= nIO2 # nBUFCTL2;
+US34EN		= !nIO0 & !nBUFCTL2;
+
+
+

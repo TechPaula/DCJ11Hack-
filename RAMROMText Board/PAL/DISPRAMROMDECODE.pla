@@ -1,0 +1,31 @@
+# Berkeley PLA format generated using
+#
+# CUPL(WM)        5.0a Serial# 60008009
+# Device          g16v8s  Library DLIB-h-40-9
+# Created         Sat Dec 30 17:00:22 2023
+# Name            DispRAMROMDecode
+# Partno          
+# Revision        0.1
+# Date            28/12/2023
+# Designer        PM
+# Company         
+# Assembly        
+# Location        
+#
+# Inputs  CHAR_DISP_EN DISP_LED LA13 LA14 
+#         LA15 LA16 LA17 LA18 
+#         LA19 LA20 LA21 RAM_EN 
+#         RAM_LED ROM_EN ROM_LED nBUFCTL 
+#         nLBS_MEM 
+# Outputs CHAR_DISP_EN !DISP_LED !RAM_EN !RAM_LED 
+#         !ROM_EN !ROM_LED 
+.i 17
+.o 6
+.p 6
+--101-----------0 1~~~~~
+--101-----------0 ~1~~~~
+----0-----------0 ~~1~~~
+----0-----------0 ~~~1~~
+--011----------00 ~~~~1~
+--011----------00 ~~~~~1
+.end

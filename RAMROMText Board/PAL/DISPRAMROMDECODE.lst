@@ -1,0 +1,59 @@
+LISTING FOR LOGIC DESCRIPTION FILE: DISPRAMROMDECODE.pld             Page 1
+
+CUPL(WM): Universal Compiler for Programmable Logic
+Version 5.0a Serial# 60008009
+Copyright (c) 1983, 1998 Logical Devices, Inc.
+Created Sat Dec 30 17:00:22 2023
+
+  1:Name      DispRAMROMDecode;
+  2:Partno    ;
+  3:Date      28/12/2023;
+  4:Revision  0.1;
+  5:Designer  PM;
+  6:Company   ;
+  7:Assembly  ;
+  8:Location  ;
+  9:Device    g16v8;
+ 10:
+ 11:
+ 12:/** Inputs **/
+ 13:Pin 1 = LA13;
+ 14:Pin 2 = LA14;
+ 15:Pin 3 = LA15;
+ 16:Pin 4 = LA16;
+ 17:Pin 5 = LA17;
+ 18:Pin 6 = LA18;
+ 19:Pin 7 = LA19;
+ 20:Pin 8 = LA20;
+ 21:Pin 9 = LA21;
+ 22:Pin 12 = nBUFCTL;
+ 23:Pin 13 = nLBS_MEM;
+ 24:
+ 25:/** Outputs **/
+ 26:Pin 19 = RAM_EN;
+ 27:Pin 18 = ROM_EN;
+ 28:Pin 17 = CHAR_DISP_EN;
+ 29:Pin 16 = DISP_LED;
+ 30:Pin 15 = ROM_LED;
+ 31:Pin 14 = RAM_LED;
+ 32:
+ 33:/** Logic equations **/
+ 34:!RAM_EN       = !nLBS_MEM & !LA15;
+ 35:!RAM_LED      = !nLBS_MEM & !LA15;
+ 36:CHAR_DISP_EN  = !nLBS_MEM & LA15 & !LA14 & LA13;
+ 37:!DISP_LED     = !nLBS_MEM & LA15 & !LA14 & LA13;
+ 38:!ROM_EN       = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;
+ 39:!ROM_LED      = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;
+ 40:
+ 41:
+ 42:
+ 43:
+ 44:
+ 45:
+ 46:
+ 47:
+
+
+
+Jedec Fuse Checksum       (1cf7)
+Jedec Transmit Checksum   (9719)

@@ -1,0 +1,43 @@
+%SIGNAL
+PIN  17 =  CHAR_DISP_EN 
+PIN  16 =  DISP_LED 
+PIN   1 =  LA13 
+PIN   2 =  LA14 
+PIN   3 =  LA15 
+PIN   4 =  LA16 
+PIN   5 =  LA17 
+PIN   6 =  LA18 
+PIN   7 =  LA19 
+PIN   8 =  LA20 
+PIN   9 =  LA21 
+PIN  19 =  RAM_EN 
+PIN  14 =  RAM_LED 
+PIN  18 =  ROM_EN 
+PIN  15 =  ROM_LED 
+PIN  12 =  nBUFCTL 
+PIN  13 =  nLBS_MEM 
+%END
+
+%FIELD
+%END
+
+%EQUATION
+CHAR_DISP_EN =>
+    LA13 & !LA14 & LA15 & !nLBS_MEM
+
+!DISP_LED =>
+    LA13 & !LA14 & LA15 & !nLBS_MEM
+
+!RAM_EN =>
+    !LA15 & !nLBS_MEM
+
+!RAM_LED =>
+    !LA15 & !nLBS_MEM
+
+!ROM_EN =>
+    !LA13 & LA14 & LA15 & !nBUFCTL & !nLBS_MEM
+
+!ROM_LED =>
+    !LA13 & LA14 & LA15 & !nBUFCTL & !nLBS_MEM
+
+%END
