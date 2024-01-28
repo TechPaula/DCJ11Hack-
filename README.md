@@ -11,6 +11,8 @@ I've long admired this chip for no other reason than it looks so freekin' cool, 
 So far There is the main CPU board and also the RAM, ROM and text display board. You'll find the schematics and PCB files here and they were made in KiCAD Version 7.0.1 but should work with later versions of KiCAD. I've also included the PAL files for each of the PALs on the board (one on each board). Hopefully this will give you enough to get going.
 The text displays are mounted on the opposite side to the RAM/ROM chips as I wanted to be able to see the text and also be able to turn it to see the DCJ11 chip (did I say how gorgeous this chip is?).
 
+![Picture of Displays PCB](https://github.com/TechPaula/DCJ11Hack-/blob/main/images/DCJ11_Text.png)
+
 I got my backplane from eBay here - https://www.ebay.co.uk/itm/284367015211 and the same seller also does backplanes with more slots.
 
 When it powers up the chip jumps to it's "ODT" mode rather than running code, this was done to allow me to play around with thinngs and get an understanding of the chip. 
