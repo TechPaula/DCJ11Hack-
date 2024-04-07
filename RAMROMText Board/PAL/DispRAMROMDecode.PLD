@@ -31,12 +31,25 @@ Pin 15 = ROM_LED;
 Pin 14 = RAM_LED;
 
 /** Logic equations **/
+/** RAM 0x0000 to 0x7FFF **/
 !RAM_EN       = !nLBS_MEM & !LA15;
 !RAM_LED      = !nLBS_MEM & !LA15;
-CHAR_DISP_EN  = !nLBS_MEM & LA15 & !LA14 & LA13;
-!DISP_LED     = !nLBS_MEM & LA15 & !LA14 & LA13;
-!ROM_EN       = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;
-!ROM_LED      = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;
+
+/** Display 0x6000 to 0x7FFF, WRITE ONLY, so readable from RAM **/
+CHAR_DISP_EN  = !nLBS_MEM & !LA15 & LA14 & LA13;
+!DISP_LED     = !nLBS_MEM & !LA15 & LA14 & LA13;
+
+/** ROM 0x8000 to 0xBFFF */
+!ROM_EN       = !nLBS_MEM & !nBUFCTL & LA15 & !LA14;
+!ROM_LED      = !nLBS_MEM & !nBUFCTL & LA15 & !LA14;
+
+/** Matrix Display 0xC000 to 0xDFFF **/
+/*MatrixEN    = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;*/
+
+/** SPARE 0xE000 to 0xFFFF **/
+/*SpareEN    = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;*/
+
+
 
 
 

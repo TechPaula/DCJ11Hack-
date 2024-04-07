@@ -3,7 +3,7 @@
 
 START:
 		mov #MESG, r0			; the start of the message
-		mov #120036,r1			; display address
+		mov #060036,r1			; display address
 		clr r3					; clr our counter
 
 LOOP:

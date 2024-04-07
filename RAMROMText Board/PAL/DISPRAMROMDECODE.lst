@@ -3,7 +3,7 @@ LISTING FOR LOGIC DESCRIPTION FILE: DISPRAMROMDECODE.pld             Page 1
 CUPL(WM): Universal Compiler for Programmable Logic
 Version 5.0a Serial# 60008009
 Copyright (c) 1983, 1998 Logical Devices, Inc.
-Created Sat Dec 30 17:00:22 2023
+Created Sun Apr 07 12:14:50 2024
 
   1:Name      DispRAMROMDecode;
   2:Partno    ;
@@ -38,22 +38,43 @@ Created Sat Dec 30 17:00:22 2023
  31:Pin 14 = RAM_LED;
  32:
  33:/** Logic equations **/
- 34:!RAM_EN       = !nLBS_MEM & !LA15;
- 35:!RAM_LED      = !nLBS_MEM & !LA15;
- 36:CHAR_DISP_EN  = !nLBS_MEM & LA15 & !LA14 & LA13;
- 37:!DISP_LED     = !nLBS_MEM & LA15 & !LA14 & LA13;
- 38:!ROM_EN       = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;
- 39:!ROM_LED      = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;
- 40:
+ 34:/** RAM 0x0000 to 0x7FFF **/
+ 35:!RAM_EN       = !nLBS_MEM & !LA15;
+ 36:!RAM_LED      = !nLBS_MEM & !LA15;
+ 37:
+ 38:/** Display 0x6000 to 0x7FFF, WRITE ONLY, so readable from RAM **/
+ 39:CHAR_DISP_EN  = !nLBS_MEM & !LA15 & LA14 & LA13;
+ 40:!DISP_LED     = !nLBS_MEM & !LA15 & LA14 & LA13;
  41:
- 42:
- 43:
- 44:
+ 42:/** ROM 0x8000 to 0xBFFF */
+ 43:!ROM_EN       = !nLBS_MEM & !nBUFCTL & LA15 & !LA14;
+ 44:!ROM_LED      = !nLBS_MEM & !nBUFCTL & LA15 & !LA14;
  45:
- 46:
- 47:
+ 46:/** Matrix Display 0xC000 to 0xDFFF **/
+ 47:/*MatrixEN    = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;*/
+ 48:
+ 49:/** SPARE 0xE000 to 0xFFFF **/
+ 50:/*SpareEN    = !nLBS_MEM & !nBUFCTL & LA15 & LA14 & !LA13;*/
+ 51:
+ 52:
+ 53:
+
+LISTING FOR LOGIC DESCRIPTION FILE: DISPRAMROMDECODE.pld             Page 2
+
+CUPL(WM): Universal Compiler for Programmable Logic
+Version 5.0a Serial# 60008009
+Copyright (c) 1983, 1998 Logical Devices, Inc.
+Created Sun Apr 07 12:14:50 2024
+
+ 54:
+ 55:
+ 56:
+ 57:
+ 58:
+ 59:
+ 60:
 
 
 
-Jedec Fuse Checksum       (1cf7)
-Jedec Transmit Checksum   (9719)
+Jedec Fuse Checksum       (1ce7)
+Jedec Transmit Checksum   (9745)

@@ -5,7 +5,7 @@
 
 CUPL(WM)        5.0a Serial# 60008009
 Device          g16v8s  Library DLIB-h-40-9
-Created         Sat Dec 30 17:00:22 2023
+Created         Sun Apr 07 12:14:50 2024
 Name            DispRAMROMDecode
 Partno          
 Revision        0.1
@@ -20,10 +20,10 @@ Location
 ===============================================================================
 
 CHAR_DISP_EN =>
-    LA13 & !LA14 & LA15 & !nLBS_MEM
+    LA13 & LA14 & !LA15 & !nLBS_MEM
 
 !DISP_LED =>
-    LA13 & !LA14 & LA15 & !nLBS_MEM
+    LA13 & LA14 & !LA15 & !nLBS_MEM
 
 !RAM_EN =>
     !LA15 & !nLBS_MEM
@@ -32,10 +32,10 @@ CHAR_DISP_EN =>
     !LA15 & !nLBS_MEM
 
 !ROM_EN =>
-    !LA13 & LA14 & LA15 & !nBUFCTL & !nLBS_MEM
+    !LA14 & LA15 & !nBUFCTL & !nLBS_MEM
 
 !ROM_LED =>
-    !LA13 & LA14 & LA15 & !nBUFCTL & !nLBS_MEM
+    !LA14 & LA15 & !nBUFCTL & !nLBS_MEM
 
 
 ===============================================================================

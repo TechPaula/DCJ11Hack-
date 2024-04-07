@@ -1,7 +1,7 @@
 NOP
 
 SETUP:
-	mov #120000, r0		; display address
+	mov #060000, r0		; display address
 	mov #17, r1			; counter
 	mov #52, (r0)		; display first character "*"
 	jsr r3, DELAY		; Short Delay

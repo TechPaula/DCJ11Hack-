@@ -23,10 +23,10 @@ PIN  13 =  nLBS_MEM
 
 %EQUATION
 CHAR_DISP_EN =>
-    LA13 & !LA14 & LA15 & !nLBS_MEM
+    LA13 & LA14 & !LA15 & !nLBS_MEM
 
 !DISP_LED =>
-    LA13 & !LA14 & LA15 & !nLBS_MEM
+    LA13 & LA14 & !LA15 & !nLBS_MEM
 
 !RAM_EN =>
     !LA15 & !nLBS_MEM
@@ -35,9 +35,9 @@ CHAR_DISP_EN =>
     !LA15 & !nLBS_MEM
 
 !ROM_EN =>
-    !LA13 & LA14 & LA15 & !nBUFCTL & !nLBS_MEM
+    !LA14 & LA15 & !nBUFCTL & !nLBS_MEM
 
 !ROM_LED =>
-    !LA13 & LA14 & LA15 & !nBUFCTL & !nLBS_MEM
+    !LA14 & LA15 & !nBUFCTL & !nLBS_MEM
 
 %END

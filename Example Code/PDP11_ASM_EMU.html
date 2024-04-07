@@ -1,0 +1,6133 @@
+
+<html>
+
+<head>
+
+<title>PDP-11 Assembly Language Simulator</title>
+
+<style type="text/css">
+
+textarea, table, input, p, legend
+{
+ font-family: "Lucida Console";
+
+ font-size: 11pt;
+}
+
+#code_field, #output_field
+{
+ width: 490px;
+ height: 646px;
+ margin: 5px;
+}
+
+#code_win
+{
+ float: left;
+}
+
+#output_win
+{
+ float: left;
+}
+
+#reg_field
+{
+ width: 1015px;
+ margin: 5px;
+}
+
+#preg
+{
+ margin: 1px;
+}
+
+td
+{
+ padding: 4px;
+}
+
+input
+{
+ padding: 1px;
+}
+
+</style>
+
+</head>
+
+<body onload="resetMachine()">
+
+<!-- START : REGISTERS -->
+
+<div id="reg_win">
+
+<fieldset id="reg_field">
+
+<p id="preg">
+R0: <input type="text" id="reg_0" size="8">
+R1: <input type="text" id="reg_1" size="8">
+R2: <input type="text" id="reg_2" size="8">
+R3: <input type="text" id="reg_3" size="8">
+R4: <input type="text" id="reg_4" size="8">
+R5: <input type="text" id="reg_5" size="8">
+SP: <input type="text" id="reg_6" size="8">
+PC: <input type="text" id="reg_7" size="8">
+</p>
+
+</fieldset>
+
+</div>
+
+<!-- END : REGISTERS -->
+
+<!-- START : CODE WINDOW -->
+
+<div id="code_win">
+
+<fieldset id="code_field">
+
+<legend>Code</legend>
+
+<textarea id="pdp11_code" cols="52" rows="31" spellcheck="false"></textarea>
+
+<p>
+<input type="button" value="Compile" onclick="doCompile()">
+<input type="button" value="Run" onclick="runCode()">
+<input type="button" value="Step" onclick="stepCode()">
+<input type="button" value="Watch" onclick="dispWatch()">
+<input type="button" value="View Binary" onclick="viewMachineCode()">
+<input type="button" value="Clear" onclick="clearCode()">
+</p>
+
+</fieldset>
+
+</div>
+
+<!-- END : CODE WINDOW -->
+
+<!-- START : OUTPUT WINDOW -->
+
+<div id="output_win">
+
+<fieldset id="output_field">
+
+<legend>Output</legend>
+
+<textarea id="txtOut" cols="52" rows="31" spellcheck="false"></textarea>
+
+<p>
+<input type="button" value="Reset Machine" onclick="resetMachine()">
+<input type="button" value="Hex|Oct" onclick="hex_oct()">
+<input type="button" value="Jump" onclick="jumpTo()">
+<input type="text" id="jump_to_location" size="10">
+<input type="button" value="<<" onclick="jumpBack()">
+<input type="button" value=">>" onclick="jumpForward()">
+</p>
+
+</fieldset>
+
+</div>
+
+</body>
+
+<script type="text/javascript">
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+// global variables:
+
+var g_Registers=[0,0,0,0,0,0,0,0];
+
+var g_TNZVC=0;
+
+var g_mainMemory=[];
+
+var g_LocationCounter=0;
+
+var g_SymbolTable=[];
+
+var g_bShowWatch=false;
+
+var g_bShowMachineCode=false;
+
+var g_bStopPass=false;
+
+var g_LastErrorMessage="";
+
+var g_CurrentLine="";
+
+var g_bCompileError=false;
+
+var g_halt_flag=0;
+
+var g_machineCode="";
+
+var g_LastTrapMessage="";
+
+var g_bShowHex=false;
+
+var g_bShowBlock=false;
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function clearCode()
+{
+ document.getElementById("pdp11_code").value = "";
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function clearAll()
+{
+ document.getElementById("txtOut").value = "";
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function resetMachine()
+{
+ document.getElementById("txtOut").value = "";
+
+ var i;
+
+ for(i=0;i<0200000;i++)
+ {
+  g_mainMemory[i]=0;
+ }
+
+ g_machineCode="";
+
+ clearRegisters();
+
+ g_SymbolTable=[];
+
+ g_bShowWatch=false;
+
+ g_bShowMachineCode=false;
+
+ g_bStopPass=false;
+
+ document.getElementById("jump_to_location").value=0;
+
+ dispMemory(0);
+
+ g_LastTrapMessage="";
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function clearRegisters()
+{
+ var i;
+
+ for(i=0;i<8;i++) g_Registers[i]=0;
+
+ g_TNZVC = 0;
+
+ showRegisters();
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function showRegisters()
+{
+ if(g_bShowHex)
+ {
+  document.getElementById("reg_0").value = printHexValue(g_Registers[0]);
+  document.getElementById("reg_1").value = printHexValue(g_Registers[1]);
+  document.getElementById("reg_2").value = printHexValue(g_Registers[2]);
+  document.getElementById("reg_3").value = printHexValue(g_Registers[3]);
+  document.getElementById("reg_4").value = printHexValue(g_Registers[4]);
+  document.getElementById("reg_5").value = printHexValue(g_Registers[5]);
+  document.getElementById("reg_6").value = printHexValue(g_Registers[6]);
+  document.getElementById("reg_7").value = printHexValue(g_Registers[7]);
+ }
+ else
+ {
+  document.getElementById("reg_0").value = printOctValue(g_Registers[0]);
+  document.getElementById("reg_1").value = printOctValue(g_Registers[1]);
+  document.getElementById("reg_2").value = printOctValue(g_Registers[2]);
+  document.getElementById("reg_3").value = printOctValue(g_Registers[3]);
+  document.getElementById("reg_4").value = printOctValue(g_Registers[4]);
+  document.getElementById("reg_5").value = printOctValue(g_Registers[5]);
+  document.getElementById("reg_6").value = printOctValue(g_Registers[6]);
+  document.getElementById("reg_7").value = printOctValue(g_Registers[7]);
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function printOctValue(val)
+{
+ // print a 16 bit word in Octal with leading 0's: 
+
+ var s=val.toString(8);
+
+ while(s.length<6)
+ {
+  s="0"+s;
+ }
+
+ return s;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function printHexValue(val)
+{
+ // print a 16 bit word in Hex with leading 0's: 
+
+ var s=val.toString(16);
+
+ while(s.length<4)
+ {
+  s="0"+s;
+ }
+
+ return s;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function bytesToWord(upper,lower)
+{
+ return (lower + (upper << 8)) & 0177777;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function checkTrapBit()
+{
+ // has a recent op set the trap bit:
+
+ return (g_TNZVC & 16);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function address_Add(addr,offset)
+{
+ // calc the new address:
+
+ var result = (addr>>>0) + (offset>>>0);
+
+ return (result & 0177777);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function address_Sub(addr,offset)
+{
+ // calc the new address:
+
+ offset = ~offset + 1;
+
+ var result = (addr>>>0) + (offset>>>0);
+
+ return (result & 0177777);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function twosComplementAdd(A,B)
+{
+ // Add 2 words:
+
+ var result = (A>>>0) + (B>>>0);
+
+ return (result & 0177777);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function twosComplementAdd_B(A,B)
+{
+ // Add 2 bytes:
+
+ var result = (A>>>0) + (B>>>0);
+
+ return (result & 0377);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function twosComplementSub(A,B)
+{
+ // Subtract word B from word A:
+
+ // result = A + ~B + 1;
+
+ B = ~(B>>>0) + 1;
+
+ var result = (A>>>0) + (B>>>0);
+
+ return (result & 0177777);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function twosComplementSub_B(A,B)
+{
+ // Subtract byte B from byte A:
+
+ // result = A + ~B + 1;
+
+ B = ~(B>>>0) + 1;
+
+ var result = (A>>>0) + (B>>>0);
+
+ return (result & 0377);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function twosComplementMultiply(A,B)
+{
+ // result is a 16 bit value:
+
+ var neg_result=0;
+
+ if((A>>>0) & 0x8000)
+ {
+  if((B & 0x8000)==0) neg_result=1;
+ }
+
+ if((B>>>0) & 0x8000)
+ {
+  if((A & 0x8000)==0) neg_result=1;
+ }
+
+ // get the absolute values:
+
+ if((A>>>0) & 0x8000) A = (~(A>>>0) + 1) & 0xffff;
+
+ if((B>>>0) & 0x8000) B = (~(B>>>0) + 1) & 0xffff;
+
+ // multiply the absolute values:
+
+ var result = A*B;
+
+ if(result >= 0100000)
+ {
+  g_bCompileError=true;
+
+  g_LastErrorMessage="The multiply operation in the expression caused an overflow.";
+
+  bError=true;
+ }
+
+ // apply the correct sign:
+
+ if(neg_result==1)
+ {
+  result = ~(result>>>0) + 1;
+ }
+
+ return (result & 0177777);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function twosComplementDivide(A,B)
+{
+ // result is a 16 bit value:
+
+ var neg_result=0;
+
+ if((A>>>0) & 0x8000)
+ {
+  if(((B>>>0) & 0x8000)==0) neg_result=1;
+ }
+
+ if((B>>>0) & 0x8000)
+ {
+  if(((A>>>0) & 0x8000)==0) neg_result=1;
+ }
+
+ // get the absolute values:
+
+ if((A>>>0) & 0x8000) A = (~(A>>>0) + 1) & 0xffff;
+
+ if((B>>>0) & 0x8000) B = (~(B>>>0) + 1) & 0xffff;
+
+ var result = 0;
+
+ // calculate the absolute value of the quotient:
+
+ if(B==0)
+ {
+  g_bCompileError=true;
+
+  g_LastErrorMessage="The expression caused a divide by zero error.";
+
+  bError=true;
+ }
+ else
+ {
+  // result must be an integer:
+
+  result = (A - A%B)/B;
+ }
+
+ // apply the correct sign:
+
+ if(neg_result==1)
+ {
+  result = ~(result>>>0) + 1;
+ }
+
+ return (result & 0177777);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function pushStack(word)
+{
+ // by default the stack begins at memory location
+ // 0177776 and grows downward:
+
+ // the SP register (R6) points to the top of the stack:
+
+ if(g_Registers[6]==0)
+ {
+  g_Registers[6]=0177776;
+ }
+ else
+ {
+  // update the stack pointer:
+
+  g_Registers[6] -= 2;
+ }
+
+ g_mainMemory[g_Registers[6]] = (word & 0xff);
+
+ g_mainMemory[g_Registers[6]+1] = (word & 0xff00) >>> 8;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function popStack()
+{
+ // the word in memory pointed to by R6 (the SP) is returned:
+
+ var word=0;
+
+ word = bytesToWord(g_mainMemory[g_Registers[6]+1],g_mainMemory[g_Registers[6]]);
+
+ // update the stack pointer:
+
+ g_Registers[6] += 2;
+
+ if(g_Registers[6] >= 0200000) g_Registers[6]=0;
+
+ return (word & 0xffff);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function hex_oct()
+{
+ // toggle between hex and oct display modes:
+
+ var addr = getDispAddr();
+
+ g_bShowHex = !g_bShowHex;
+
+ var tmp="";
+
+ if(g_bShowHex)
+ {
+  tmp=printHexValue(addr);
+ }
+ else
+ {
+  tmp=printOctValue(addr);
+ }
+
+ if(g_bShowBlock) tmp += "+";
+
+ document.getElementById("jump_to_location").value = tmp;
+
+ if(g_bShowWatch)
+ {
+  dispWatch();
+ }
+ else
+ {
+  if(g_bShowBlock)
+  {
+   dispMemoryBlock(addr);
+  }
+  else
+  {
+   dispMemory(addr);
+  }
+ }
+
+ showRegisters();
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function jumpTo()
+{
+ g_bShowWatch=false;
+
+ g_bShowMachineCode=false;
+
+ var addr=getDispAddr();
+
+ if(g_bShowBlock)
+ {
+  dispMemoryBlock(addr);
+ }
+ else
+ {
+  dispMemory(addr);
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function jumpBack()
+{
+ g_bShowWatch=false;
+
+ g_bShowMachineCode=false;
+
+ var addr = getDispAddr();
+
+ g_bShowBlock=false;
+
+ addr -= 60;
+
+ if(addr < 0) addr += 0200000;
+
+ if(g_bShowHex)
+ {
+  document.getElementById("jump_to_location").value = printHexValue(addr);
+ }
+ else
+ {
+  document.getElementById("jump_to_location").value = printOctValue(addr);
+ }
+
+ dispMemory(addr);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function jumpForward()
+{
+ g_bShowWatch=false;
+
+ g_bShowMachineCode=false;
+
+ var addr = getDispAddr();
+
+ g_bShowBlock=false;
+
+ addr += 60;
+
+ if(addr > 0177777) addr -= 0200000;
+
+ if(g_bShowHex)
+ {
+  document.getElementById("jump_to_location").value = printHexValue(addr);
+ }
+ else
+ {
+  document.getElementById("jump_to_location").value = printOctValue(addr);
+ }
+
+ dispMemory(addr);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function getDispAddr()
+{
+ // get the address of the area in memory to display:
+
+ // the input address can be a number (hex or oct) or symbol:
+
+ var addr = document.getElementById("jump_to_location").value;
+
+ g_bShowBlock=false;
+
+ if(addr.indexOf("+") != -1)
+ {
+  g_bShowBlock=true;
+
+  addr = addr.replace(/\x2b/g,"");
+ }
+
+ var ptn_label = /^[a-zA-Z][a-zA-Z0-9_]{0,}$/;
+
+ if(ptn_label.test(addr))
+ {
+  if(addr.length > 6) addr = addr.substring(0,6);
+
+  if(g_SymbolTable.hasOwnProperty(addr))
+  {
+   addr = g_SymbolTable[addr];
+
+   g_bShowBlock=true;
+  }
+  else addr=0;
+ }
+ else
+ {
+  var rdx=8;
+
+  if(g_bShowHex)
+  {
+   rdx=16;
+  }
+  else
+  {
+   if(addr.indexOf("8") >= 0 || addr.indexOf("9") >= 0)
+   {
+    rdx=10;
+   }
+  }
+
+  addr=parseInt(addr,rdx);
+ }
+
+ return addr;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function dispMemory(addr)
+{
+ if(addr%2 > 0) addr--;
+
+ if(addr < 0 || addr > 0177777) addr = 0;
+
+ if(g_bShowHex)
+ {
+  dispMemoryHex(addr);
+
+  return;
+ }
+
+ // display the words in memory in octal:
+
+ var disp = "";
+
+ var i;
+
+ var oct_val;
+
+ for(i=0;i<30;i++)
+ {
+  if(addr > 0177777)
+  {
+   addr = 0;
+  }
+
+  var taddr = (addr + 60);
+
+  if(taddr >= 0200000) taddr -= 0200000;
+
+  // column 1:
+
+  disp += printOctValue(addr) + "  ";
+
+  oct_val = bytesToWord(g_mainMemory[addr+1],g_mainMemory[addr]);
+
+  disp += printOctValue(oct_val) + " | ";
+
+  addr += 2;
+
+  // column 2:
+
+  disp += printOctValue(taddr) + "  ";
+
+  oct_val = bytesToWord(g_mainMemory[taddr+1],g_mainMemory[taddr]);
+
+  disp += printOctValue(oct_val) + " | ";
+
+  taddr += 60;
+
+  if(taddr >= 0200000) taddr -= 0200000;
+
+  // column 3:
+
+  disp += printOctValue(taddr) + "  ";
+
+  oct_val = bytesToWord(g_mainMemory[taddr+1],g_mainMemory[taddr]);
+
+  disp += printOctValue(oct_val) + "\r\n";
+ }
+
+ document.getElementById("txtOut").value = disp;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function dispMemoryHex(addr)
+{
+ // display the words in memory in hex:
+
+ var disp = "";
+
+ var i;
+
+ var hex_val;
+
+ for(i=0;i<30;i++)
+ {
+  if(addr > 0xffff)
+  {
+   addr = 0;
+  }
+
+  var taddr = (addr + 60);
+
+  if(taddr >= 0x10000) taddr -= 0x10000;
+
+  // column 1:
+
+  disp += printHexValue(addr) + "  ";
+
+  hex_val = bytesToWord(g_mainMemory[addr+1],g_mainMemory[addr]);
+
+  disp += printHexValue(hex_val) + " | ";
+
+  addr += 2;
+
+  // column 2:
+
+  disp += printHexValue(taddr) + "  ";
+
+  hex_val = bytesToWord(g_mainMemory[taddr+1],g_mainMemory[taddr]);
+
+  disp += printHexValue(hex_val) + " | ";
+
+  taddr += 60;
+
+  if(taddr >= 0x10000) taddr -= 0x10000;
+
+  // column 3:
+
+  disp += printHexValue(taddr) + "  ";
+
+  hex_val = bytesToWord(g_mainMemory[taddr+1],g_mainMemory[taddr]);
+
+  disp += printHexValue(hex_val) + " | ";
+
+  taddr += 60;
+
+  if(taddr >= 0x10000) taddr -= 0x10000;
+
+  // column 4:
+
+  disp += printHexValue(taddr) + "  ";
+
+  hex_val = bytesToWord(g_mainMemory[taddr+1],g_mainMemory[taddr]);
+
+  disp += printHexValue(hex_val) + "\r\n";
+ }
+
+ document.getElementById("txtOut").value = disp;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function dispMemoryBlock(addr)
+{
+ // display the memory bytes in octal:
+
+ if(addr%2 > 0) addr--;
+
+ if(addr < 0 || addr > 0177777) addr = 0;
+
+ if(g_bShowHex)
+ {
+  dispMemoryBlockHex(addr);
+
+  return;
+ }
+
+ var disp = "";
+
+ var i;
+
+ var oct_val;
+
+ for(i=0;i<360;i++)
+ {
+  if(i>0 && i%12==0) disp += "\r\n";
+
+  oct_val = g_mainMemory[addr].toString(8);
+
+  while(oct_val.length<3)
+  {
+   oct_val = "0" + oct_val;
+  }
+
+  disp += oct_val + " ";
+
+  addr += 1;
+
+  if(addr >= 0200000) addr -= 0200000;
+ }
+
+ document.getElementById("txtOut").value = disp;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function dispMemoryBlockHex(addr)
+{
+ // display the memory bytes in hex:
+
+ var disp = "";
+
+ var i;
+
+ var hex_val;
+
+ for(i=0;i<464;i++)
+ {
+  if(i>0 && i%16==0) disp += "\r\n";
+
+  hex_val = g_mainMemory[addr].toString(16);
+
+  while(hex_val.length<2)
+  {
+   hex_val = "0" + hex_val;
+  }
+
+  disp += hex_val + " ";
+
+  addr += 1;
+
+  if(addr >= 0200000) addr -= 0200000;
+ }
+
+ document.getElementById("txtOut").value = disp;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function printErrorMessage(pass)
+{
+ // compiler error message:
+
+ var msg = "Compiler Error - ";
+
+ if(pass==1) msg += "Pass 1:\r\n\r\n";
+ else msg += "Pass 2:\r\n\r\n";
+
+ msg += "In the line:\r\n\r\n";
+
+ msg += g_CurrentLine + "\r\n\r\n";
+
+ msg += "Details:\r\n\r\n";
+
+ msg += g_LastErrorMessage + "\r\n\r\n";
+
+ document.getElementById("txtOut").value = msg;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function printLastTrapMessage()
+{
+ // reset the trap bit:
+
+ g_TNZVC &= 0xf;
+
+ // print the message:
+
+ var msg = "Execution error:\r\n\r\n";
+
+ msg += "The Trap bit was set.\r\n\r\n";
+
+ msg += "Details:\r\n\r\n";
+
+ msg += g_LastTrapMessage + "\r\n";
+
+ document.getElementById("txtOut").value = msg;
+
+ g_LastTrapMessage="";
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function doCompile()
+{
+ // compile assembly code to machine code:
+
+ resetMachine();
+
+ // break up the input from the text area into a lines array: 
+
+ var lines=[];
+
+ var input=document.getElementById("pdp11_code").value;
+
+ var ptn_not_crlf = /[^\n\r]{1,}/g;
+
+ lines=input.match(ptn_not_crlf);
+
+ if(lines==null)
+ {
+  document.getElementById("txtOut").value = "Error: null input - cannot compile!";
+
+  return;
+ }
+
+ var i;
+
+ // strip any comments from the end of each line:
+
+ // comments start with a ';'
+
+ for(i=0;i<lines.length;i++)
+ {
+  var pos=lines[i].indexOf(";");
+
+  if(pos >= 0)
+  {
+   lines[i] = lines[i].slice(0,pos);
+  }
+ }
+
+ // pass 1:
+
+ doPass_1(lines);
+
+ if(g_bCompileError) return;
+
+ // pass 2:
+
+ doPass_2(lines);
+
+ if(g_bCompileError) return;
+
+ dispMemory(0);
+
+ showRegisters();
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function doPass_1(lines)
+{
+ g_bStopPass=false;
+
+ g_LocationCounter = 0;
+
+ g_bCompileError = false;
+
+ var ptn_label = /[a-zA-Z][a-zA-Z0-9_]{0,}:/g;
+ var ptn_assignment = /[^\x2e=]{1,}=/;
+ var ptn_directive = /\x2e[a-zA-Z]{1,}/;
+ var ptn_set_clc = /^\s{0,}\x2e\s{0,}=[^=]{1,}$/;
+ var ptn_empty = /^\s{0,}$/;
+
+ var i,j;
+
+ var tmp_arr=[];
+
+ for(i=0;i<lines.length;i++)
+ {
+  // skip any empty lines:
+
+  if(ptn_empty.test(lines[i])) continue;
+
+  g_CurrentLine = lines[i];
+
+  // evaluate an assignment of the form: . = exp
+
+  if(ptn_set_clc.test(lines[i]))
+  {
+   calc_clc(lines[i]);
+
+   if(g_bCompileError) break;
+
+   continue;
+  }
+
+  // evaluate any assignment expressions:
+
+  if(ptn_assignment.test(lines[i]))
+  {
+   calc_assignment(lines[i]);
+
+   if(g_bCompileError) break;
+
+   continue;
+  }
+
+  // find any valid tags/labels and add them to the symbol table:
+
+  if(ptn_label.test(lines[i]))
+  {
+   tmp_arr=lines[i].match(ptn_label);
+
+   for(j=0;j<tmp_arr.length;j++)
+   {
+    addToSymbolTable(tmp_arr[j]);
+   } 
+
+   if(g_bCompileError) break;
+  }
+
+  // evaluate any compiler directives:
+
+  if(ptn_directive.test(lines[i]))
+  {
+   process_directive(lines[i],1);
+
+   if(g_bCompileError) break;
+
+   if(g_bStopPass) break;
+  }
+
+  // if the line contains an operation, determine
+  // by how much to increment the CLC:
+
+  increment_location_counter(lines[i]);
+
+  // the line could not be processed, so break:
+
+  if(g_bCompileError) break;
+ }
+
+ if(g_bCompileError) printErrorMessage(1);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function doPass_2(lines)
+{
+ g_bStopPass=false;
+
+ g_LocationCounter = 0;
+
+ g_bCompileError = false;
+
+ var ptn_directive = /\x2e[a-zA-Z]{1,}/;
+ var ptn_set_clc = /^\s{0,}\x2e\s{0,}=[^=]{1,}$/;
+ var ptn_assignment = /[^\x2e=]{1,}=/;
+ var ptn_label_only = /[a-zA-Z][a-zA-Z0-9_]{0,}:\s{0,}$/;
+ var ptn_empty = /^\s{0,}$/;
+
+ var i;
+
+ for(i=0;i<lines.length;i++)
+ {
+  // skip any empty lines:
+
+  if(ptn_empty.test(lines[i])) continue;
+
+  g_CurrentLine = lines[i];
+
+  // if the line only contains labels, skip:
+
+  if(ptn_label_only.test(lines[i]))
+  {
+   continue;
+  }
+
+  // evaluate an assignment of the form: . = exp
+
+  if(ptn_set_clc.test(lines[i]))
+  {
+   calc_clc(lines[i]);
+
+   if(g_bCompileError) break;
+
+   continue;
+  }
+
+  // skip any assignment expressions:
+
+  if(ptn_assignment.test(lines[i]))
+  {
+   continue;
+  }
+
+  // evaluate any compiler directives:
+
+  if(ptn_directive.test(lines[i]))
+  {
+   process_directive(lines[i],2);
+
+   if(g_bCompileError) break;
+
+   if(g_bStopPass) break;
+
+   continue;
+  }
+
+  // if the line contains an operation, assemble it:
+
+  calc_instr_word(lines[i]);
+
+  // the line could not be processed, so break:
+
+  if(g_bCompileError) break;
+ }
+
+ if(g_bCompileError) printErrorMessage(2);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function addToSymbolTable(symbol_id)
+{
+ // add a symbol (label) to the symbol table:
+
+ var bError=false;
+
+ symbol_id=symbol_id.replace(":","");
+
+ if(symbol_id.length > 6)
+ {
+  symbol_id = symbol_id.substring(0,6);
+ }
+
+ // cannot use the symbols - length, PC, SP:
+
+ bError = invalidSymbol(symbol_id);
+
+ if(bError) return bError;
+
+ if(g_SymbolTable.hasOwnProperty(symbol_id))
+ {
+  // error - the symbol is already in the table:
+
+  g_bCompileError=true;
+
+  g_LastErrorMessage="Redefinition of a label or symbol.";
+
+  bError=true;
+ }
+ else
+ {
+  // add to the symbol table
+
+  g_SymbolTable[symbol_id]=g_LocationCounter;
+ } 
+
+ return bError;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function invalidSymbol(symbol_id)
+{
+ // cannot use the symbols - length, PC, SP:
+
+ var bError = false;
+
+ if(symbol_id.toLowerCase() == "length")
+ {
+  g_bCompileError=true;
+
+  g_LastErrorMessage="Cannot use \'length\' as a symbol.";
+
+  bError=true;
+ }
+
+ if(symbol_id.toLowerCase() == "pc")
+ {
+  g_bCompileError=true;
+
+  g_LastErrorMessage="Cannot use \'PC\' as a symbol.";
+
+  bError=true;
+ }
+
+ if(symbol_id.toLowerCase() == "sp")
+ {
+  g_bCompileError=true;
+
+  g_LastErrorMessage="Cannot use \'SP\' as a symbol.";
+
+  bError=true;
+ }
+
+ return bError;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function runCode()
+{
+ // run the program:
+
+ g_halt_flag=0;
+
+ while(g_halt_flag==0)
+ {
+  executeInstruction();
+
+  if(g_TNZVC & 16)
+  {
+   g_halt_flag=1;
+
+   break;
+  }
+ }
+
+ showRegisters();
+
+ if(g_TNZVC & 16)
+ {
+  printLastTrapMessage();
+ }
+ else
+ {
+  if(g_bShowWatch)
+  {
+   dispWatch();
+  }
+  else
+  {
+   jumpTo();
+  }
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function stepCode()
+{
+ // execute the current instruction only:
+
+ g_halt_flag=0;
+
+ executeInstruction();
+
+ showRegisters();
+
+ if(g_TNZVC & 16)
+ {
+  printLastTrapMessage();
+
+  g_halt_flag=1;
+ }
+ else
+ {
+  if(g_bShowWatch)
+  {
+   dispWatch();
+  }
+  else if(g_bShowMachineCode)
+  {
+   viewMachineCode();
+  }
+  else
+  {
+   jumpTo();
+  }
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function viewMachineCode()
+{
+ g_bShowWatch=false;
+
+ g_bShowMachineCode=true;
+
+ document.getElementById("txtOut").value = g_machineCode;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function addToMachineCode(addr,b_append)
+{
+ // add the word at addr to the machine code listing:
+
+ var tmp = bytesToWord(g_mainMemory[addr+1],g_mainMemory[addr]);
+
+ var tstr = printOctValue(addr) + "  ";
+
+ tstr += printOctValue(tmp);
+
+ // append the original line of code:
+
+ if(b_append)
+ {
+  tstr += "    ";
+
+  tstr += g_CurrentLine;
+ }
+
+ tstr += "\r\n";
+
+ g_machineCode += tstr;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function dispWatch()
+{
+ // show the watch window:
+
+ g_bShowWatch=true;
+
+ g_bShowMachineCode=false;
+
+ var symbol_id;
+
+ var count=0;
+
+ var str_watch = "Symbol\t\tAddr\t\tValue\r\n\r\n";
+
+ for(symbol_id in g_SymbolTable) count++;
+
+ if(count > 0)
+ {
+  for(symbol_id in g_SymbolTable)
+  {
+   str_watch += symbol_id + "\t\t";
+
+   if(g_bShowHex)
+   {
+    str_watch += printHexValue(g_SymbolTable[symbol_id]) + "\t\t";
+   }
+   else
+   {
+    str_watch += printOctValue(g_SymbolTable[symbol_id]) + "\t\t";
+   }
+
+   var tmp = g_mainMemory[g_SymbolTable[symbol_id]];
+
+   tmp += (g_mainMemory[g_SymbolTable[symbol_id]+1] << 8);
+
+   if(g_bShowHex)
+   {
+    str_watch += printHexValue(tmp);
+   }
+   else
+   {
+    str_watch += printOctValue(tmp);
+   }
+
+   str_watch += "\t\t\r\n";
+  }
+ }
+ else
+ {
+  str_watch += "No symbols have been defined.\r\n\r\n";
+ }
+
+ // print the condition codes:
+
+ str_watch += "\r\nCondition Codes:\r\n\r\n";
+
+ str_watch += "N = " + ((g_TNZVC & 8) >>> 3).toString(2) + "\r\n";
+ str_watch += "Z = " + ((g_TNZVC & 4) >>> 2).toString(2) + "\r\n";
+ str_watch += "V = " + ((g_TNZVC & 2) >>> 1).toString(2) + "\r\n";
+ str_watch += "C = " + (g_TNZVC & 1).toString(2) + "\r\n";
+
+ document.getElementById("txtOut").value = str_watch;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function calc_clc(expr)
+{
+ // evaluate an assignment of the form:
+
+ // . = exp
+
+ // remove any white space:
+
+ var ptn_spc = /\s{1,}/g;
+
+ expr = expr.replace(ptn_spc,"");
+
+ var ptn_terms=/[^=]{1,}/g;
+
+ var tmp_arr=expr.match(ptn_terms);
+
+ // update the CLC:
+
+ g_LocationCounter = calc_expression(tmp_arr[tmp_arr.length-1]);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function calc_assignment(expr)
+{
+ // evaluate the expression to the right of the equal signs,
+ // and assign it's value to the symbols to the left
+ // of the equal signs:
+
+ // remove any white space:
+
+ var ptn_spc = /\s{1,}/g;
+
+ expr = expr.replace(ptn_spc,"");
+
+ var ptn_terms=/[^=]{1,}/g;
+
+ var tmp_arr=expr.match(ptn_terms);
+
+ var result=calc_expression(tmp_arr[tmp_arr.length-1]); 
+
+ var i;
+
+ for(i=0;i<tmp_arr.length-1;i++)
+ {
+  if(tmp_arr[i] == ".")
+  {
+   // if any of the symbols is a dot(.) --> error:
+
+   g_bCompileError=true;
+
+   g_LastErrorMessage="Expression contains a dot (.) to the left of an equals sign.";
+  }
+  else
+  {
+   var symbol_id = tmp_arr[i];
+
+   if(symbol_id.length > 6) symbol_id = symbol_id.substring(0,6);
+
+   if(invalidSymbol(symbol_id)==false)
+   {
+    g_SymbolTable[symbol_id]=result;
+   }
+  }
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function calc_expression(expr)
+{
+ // remove any white space:
+
+ var ptn_spc = /\s{1,}/g;
+
+ expr = expr.replace(ptn_spc,"");
+
+ // is the expression just a number:
+
+ var ptn_number = /^[\d]{1,}$/;
+
+ if(ptn_number.test(expr))
+ {
+  // the expression is just a number:
+
+  return parseInt(expr,8);
+ }
+
+ // check for invalid operator combos:
+
+ var ptn_err = /[\x2b\x2d][\x2a\x2f\x21\x26]{1,}/;
+
+ if(ptn_err.test(expr))
+ {
+  // error:
+
+  g_bCompileError=true;
+
+  g_LastErrorMessage="The expression contains an invalid sequence of operators.";
+
+  return 0;
+ }
+
+ // evaluate inside brackets first:
+
+ // from inner brackets to outer brackets:
+
+ var ptn_angle = /<[^<>]{1,}>/;
+
+ while(ptn_angle.test(expr))
+ {
+  var tmp = expr.match(ptn_angle);
+
+  tmp[0] = tmp[0].substr(1,tmp[0].length-2);
+
+  // get the numerical value:
+
+  var val = calc_expr_value(tmp[0]);
+
+  tmp[0] = "<" + tmp[0] + ">";
+
+  // replace the bracket term with it's numerical value:
+
+  expr = expr.replace(tmp[0],val.toString(8));
+ }
+
+ // now get the final numerical value:
+
+ var result = calc_expr_value(expr);
+
+ return result;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function calc_expr_value(expr)
+{
+ // compute the value of an expression:
+
+ var terms=[];
+
+ var index=0;
+
+ var i,j;
+
+ // a term contains the chars { A-Z a-z 0-9 . _ }:
+
+ var test_alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._";
+
+ // the operators:
+
+ var test_opr = "+-*&/!";
+
+ // break up the expression into separate terms:
+
+ // each term includes the corresponding operator(s) as a prefix:
+
+ // prefix the first term with a '+' sign:
+
+ var last_char="+";
+
+ terms[0]="+";
+
+ for(i=0;i<expr.length;i++)
+ {
+  if(test_opr.indexOf(expr[i]) >= 0 && test_alpha.indexOf(last_char) >= 0)
+  {
+   // current char is an operator, last char was alphanumeric:
+
+   // therefore, increment the index:
+
+   index++;
+
+   terms[index]="";
+  }
+
+  last_char = expr[i];
+
+  terms[index] += expr[i];
+ }
+
+ var result=0;
+
+ for(i=0;i<terms.length;i++)
+ {
+  // for each term, if it contains a string of successive + and - signs,
+  // reduce to a single + or - : 
+
+  var minus_count=0;
+  var plus_count=0;
+
+  for(j=0;j<terms[i].length;j++)
+  {
+   if(terms[i][j] == "-") minus_count++;
+   if(terms[i][j] == "+") plus_count++;
+  }
+
+  if(minus_count > 0 || plus_count > 0)
+  {
+   var ptn_pm = /[\x2b\x2d]{1,}/g; 
+
+   if(minus_count%2 == 0)
+   {
+    terms[i] = terms[i].replace(ptn_pm,"+");
+   }
+   else
+   {
+    terms[i] = terms[i].replace(ptn_pm,"-");
+   }
+  }
+
+  // apply the operator to update the result:
+
+  var operator = terms[i][0];
+
+  var val = calc_term(terms[i]);
+
+  if(g_bCompileError)
+  {
+   result=0;
+
+   break;
+  }
+
+  if(operator == "&") result &= val;
+  if(operator == "!") result |= val;
+
+  if(operator == "+" || operator == "-")
+  {
+   result = twosComplementAdd(result,val);
+  }
+
+  if(operator == "*")
+  {
+   result = twosComplementMultiply(result,val);
+  }
+
+  if(operator == "/")
+  {
+   result = twosComplementDivide(result,val);
+  }
+ }
+
+ return result;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function calc_term(term)
+{
+ // calculate the numerical value of the term:
+
+ var test = "*&!/";
+
+ if(test.indexOf(term[0]) >= 0)
+ {
+  // strip the operator:
+
+  term = term.substr(1);
+ }
+
+ // get the numerical value of the term:
+
+ // Is there a minus sign:
+
+ var val=1;
+
+ if(term.indexOf("-") >= 0) val=-1;
+
+ // remove any + or - signs:
+
+ term = term.replace(/[\x2b\x2d]{1,}/,"");
+
+ if(term == ".")
+ {
+  // '.' gives the value of the location counter:
+
+  // val = -1 or 1:
+
+  val *= g_LocationCounter;
+
+  return val;
+ }
+
+ if(/^\d{1,}(d|\x2e)$/i.test(term))
+ {
+  // a 'd' or '.' at the end of the number
+  // means the number is base 10:
+
+  // val = -1 or 1:
+
+  term = term.replace(/(d|\x2e)/i,"");
+
+  val *= parseInt(term,10);
+
+  return val;
+ }
+
+ if(/^\d{1,}b$/i.test(term))
+ {
+  // a 'b' at the end of the number means
+  // the number is binary (base 2):
+
+  // val = -1 or 1:
+
+  term = term.replace(/b/i,"");
+
+  val *= parseInt(term,2);
+
+  return val;
+ }
+
+ if(/^\d{1,}$/.test(term))
+ {
+  // the term is just an octal number:
+
+  // val = -1 or 1:
+
+  val *= parseInt(term,8);
+
+  return val;
+ }
+
+ // symbols cannot be longer than 6 chars:
+
+ if(term.length > 6) term = term.substring(0,6);
+
+ // find the term in the symbol table:
+
+ if(g_SymbolTable.hasOwnProperty(term))
+ {
+  // val = -1 or 1:
+
+  val *= g_SymbolTable[term];
+ }
+ else
+ {
+  // error - cannot evaluate term:
+
+  g_bCompileError=true;
+
+  g_LastErrorMessage="Cannot evaluate the term: " + term;
+ } 
+
+ return val;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function process_directive(line,pass)
+{
+ // process the directives:
+
+ // .even
+ // .odd
+ // .blkb
+ // .blkw
+ // .end
+ // .byte
+ // .word
+ // .hex
+ // .ascii
+
+ var bProcessed=false;
+
+ var i;
+
+ var tmp_line;
+
+ var tmp_arr;
+
+ var tmp_word;
+
+ var ptn_del_space = /[\s]{1,}/g;
+
+ var ptn_label = /[a-zA-Z][a-zA-Z0-9_]{0,}:/g;
+
+ // strip off any labels:
+
+ tmp_line = line.replace(ptn_label,"");
+
+ if(line.toLowerCase().indexOf(".even") >= 0)
+ {
+  // the .even directive:
+
+  // set the location counter to the next even value:
+
+  if(g_LocationCounter % 2 > 0) g_LocationCounter += 1;
+
+  if(g_LocationCounter > 0177777)
+  {
+   g_bCompileError=true;
+
+   g_LastErrorMessage=".even directive : address out of range.";
+  }
+
+  bProcessed=true;
+ } 
+
+ if(line.toLowerCase().indexOf(".odd") >= 0)
+ {
+  // the .odd directive:
+
+  // set the location counter to the next odd value:
+
+  if(g_LocationCounter % 2 == 0) g_LocationCounter += 1;
+
+  if(g_LocationCounter > 0177777)
+  {
+   g_bCompileError=true;
+
+   g_LastErrorMessage=".odd directive : address out of range.";
+  }
+
+  bProcessed=true;
+ }
+
+ if(line.toLowerCase().indexOf(".blkb") >= 0)
+ {
+  // the .blkb directive:
+
+  // format: .blkb exp
+
+  // reserve a block of exp bytes
+
+  tmp_line = tmp_line.replace(/\x2eblkb/i,"");
+
+  tmp_line = tmp_line.replace(ptn_del_space,"");
+
+  // just increment the location counter:
+
+  if(tmp_line.length > 0)
+  {
+   g_LocationCounter += calc_expression(tmp_line) & 0xffff;
+  }
+  else
+  {
+   g_bCompileError=true;
+
+   g_LastErrorMessage=".blkb directive - number of bytes to reserve not specified.";
+  } 
+
+  bProcessed=true;
+ }
+
+ if(line.toLowerCase().indexOf(".blkw") >= 0)
+ {
+  // the .blkw directive:
+
+  // format: .blkw exp
+
+  // reserve a block of exp bytes
+
+  tmp_line = tmp_line.replace(/\x2eblkw/i,"");
+
+  tmp_line = tmp_line.replace(ptn_del_space,"");
+
+  // just increment the location counter:
+
+  if(tmp_line.length > 0)
+  {
+   g_LocationCounter += 2*(calc_expression(tmp_line) & 0xffff);
+  }
+  else
+  {
+   g_bCompileError=true;
+
+   g_LastErrorMessage=".blkw directive - number of words to reserve not specified.";
+  } 
+
+  bProcessed=true;
+ }
+
+ if(line.toLowerCase().indexOf(".end") >= 0)
+ {
+  // the .end directive:
+
+  // stop compiling - pass 1 or 2:
+
+  g_bStopPass=true;
+
+  if(pass==1)
+  {
+   // format: .end exp
+
+   // if present, exp gives the entry point for the program:
+
+   tmp_line = tmp_line.replace(/\x2eend/i,"");
+
+   tmp_line = tmp_line.replace(ptn_del_space,"");
+
+   // get the entry point:
+
+   g_Registers[7]=0;
+
+   if(tmp_line.length > 0)
+   {
+    g_Registers[7] = calc_expression(tmp_line) & 0xffff;
+   }
+  }
+
+  bProcessed=true;
+ }
+
+ if(line.toLowerCase().indexOf(".byte") >= 0)
+ {
+  // the .byte directive:
+
+  // format: .byte exp1,exp2,...,expn
+
+  bProcessed=true;
+
+  if(pass==1)
+  {
+   // just increment the location counter:
+
+   if(line.toLowerCase().indexOf(".byte") >= 0)
+   {
+    var nbytes = line.split(",").length;
+
+    // make sure the next value of the CLC is even:
+
+    if(nbytes%2 > 0) nbytes += 1;
+
+    g_LocationCounter += nbytes;
+   }
+  }
+
+  if(pass==2)
+  {
+   // evaluate the expressions and load the values into memory:
+
+   // Note (i) - anything like ,,, will be interpreted as: 0,0,0,0
+   // Note (ii) - .byte is interpreted as .byte 0
+
+   tmp_line = tmp_line.replace(/\x2ebyte/i,"");
+
+   tmp_line = tmp_line.replace(ptn_del_space,"");
+
+   tmp_line = tmp_line.replace(/,,/g,",0,");
+
+   tmp_line = tmp_line.replace(/,,/g,",0,");
+
+   if(tmp_line[0]==",") tmp_line = "0" + tmp_line;
+
+   if(tmp_line[tmp_line.length-1]==",") tmp_line += "0";
+
+   if(tmp_line.length == 0) tmp_line = "0";
+
+   tmp_arr = tmp_line.split(",");
+
+   for(i=0;i<tmp_arr.length;i++)
+   {
+    tmp_word = calc_expression(tmp_arr[i]);
+
+    g_mainMemory[g_LocationCounter] = tmp_word & 0xff;
+
+    g_LocationCounter++;
+
+    if(g_LocationCounter%2==0) addToMachineCode(g_LocationCounter-2,i==1);
+   } 
+
+   // make sure the next value of the CLC is even:
+
+   if(tmp_arr.length % 2 > 0)
+   {
+    g_LocationCounter++;
+
+    addToMachineCode(g_LocationCounter-2,i==1);
+   }
+  }
+ }
+
+ if(line.toLowerCase().indexOf(".word") >= 0)
+ {
+  // the .word directive:
+
+  // format: .word exp1,exp2,...,expn
+
+  bProcessed=true;
+
+  if(pass==1)
+  {
+   // just increment the location counter:
+
+   var nwords = line.split(",").length;
+
+   g_LocationCounter += 2*nwords;
+  }
+
+  if(pass==2)
+  {
+   // evaluate the expressions and load the values into memory:
+
+   // Note (i) - anything like ,,, will be interpreted as: 0,0,0,0
+   // Note (ii) - .word is interpreted as .word 0
+
+   tmp_line = tmp_line.replace(/\x2eword/i,"");
+
+   tmp_line = tmp_line.replace(ptn_del_space,"");
+
+   tmp_line = tmp_line.replace(/,,/g,",0,");
+
+   tmp_line = tmp_line.replace(/,,/g,",0,");
+
+   if(tmp_line[0]==",") tmp_line = "0" + tmp_line;
+
+   if(tmp_line[tmp_line.length-1]==",") tmp_line += "0";
+
+   if(tmp_line.length == 0) tmp_line = "0";
+
+   tmp_arr = tmp_line.split(",");
+
+   for(i=0;i<tmp_arr.length;i++)
+   {
+    // PDP-11:
+
+    // Low bytes --> even memory locations 
+
+    // High bytes --> odd memory locations 
+
+    tmp_word = (calc_expression(tmp_arr[i]) & 0xffff);
+
+    g_mainMemory[g_LocationCounter] = (tmp_word & 0xff);
+
+    g_LocationCounter++;
+
+    g_mainMemory[g_LocationCounter] = (tmp_word & 0xff00) >>> 8;
+
+    g_LocationCounter++;
+
+    addToMachineCode(g_LocationCounter-2,i==0);
+   }
+  }
+ }
+
+ if(line.toLowerCase().indexOf(".hex") >= 0)
+ {
+  // the .hex directive:
+
+  // format: .word h(1),h(2),...,h(n)
+
+  // h(n) is a 16-bit hex number
+
+  bProcessed=true;
+
+  if(pass==1)
+  {
+   // just increment the location counter:
+
+   var nhex = line.split(",").length;
+
+   g_LocationCounter += 2*nhex;
+  }
+
+  if(pass==2)
+  {
+   // evaluate the expressions and load the values into memory:
+
+   // Note (i) - anything like ,,, will be interpreted as: 0,0,0,0
+   // Note (ii) - .hex is interpreted as .hex 0
+
+   tmp_line = tmp_line.replace(/\x2ehex/i,"");
+
+   tmp_line = tmp_line.replace(ptn_del_space,"");
+
+   tmp_line = tmp_line.replace(/,,/g,",0,");
+
+   tmp_line = tmp_line.replace(/,,/g,",0,");
+
+   if(tmp_line[0]==",") tmp_line = "0" + tmp_line;
+
+   if(tmp_line[tmp_line.length-1]==",") tmp_line += "0";
+
+   if(tmp_line.length == 0) tmp_line = "0";
+
+   // check for invalid chars:
+
+   if(/[^0-9a-fA-F,]/.test(tmp_line))
+   {
+    g_bCompileError=true;
+
+    g_LastErrorMessage=".hex directive - argument contains non-hex characters.";
+
+    return;
+   }
+
+   tmp_arr = tmp_line.split(",");
+
+   for(i=0;i<tmp_arr.length;i++)
+   {
+    // PDP-11:
+
+    // Low bytes --> even memory locations 
+
+    // High bytes --> odd memory locations 
+
+    tmp_word = (parseInt(tmp_arr[i],16));
+
+    if(tmp_word > 0xffff)
+    {
+     g_bCompileError=true;
+
+     g_LastErrorMessage=".hex directive - argument is greater than 0xFFFF.";
+
+     return;
+    }
+
+    g_mainMemory[g_LocationCounter] = (tmp_word & 0xff);
+
+    g_LocationCounter++;
+
+    g_mainMemory[g_LocationCounter] = (tmp_word & 0xff00) >>> 8;
+
+    g_LocationCounter++;
+
+    addToMachineCode(g_LocationCounter-2,i==0);
+   }
+  }
+ }
+
+ if(line.toLowerCase().indexOf(".ascii") >= 0)
+ {
+  // the .ascii directive:
+
+  // format: .ascii "text string"
+
+  bProcessed=true;
+
+  var strlen;
+
+  var ptn_str = /^[^"]{1,}"[^"]{1,}"\s{0,}$/;
+
+  if(ptn_str.test(line))
+  {
+   tmp_arr = line.match(/"[^"]{1,}"/);
+
+   tmp_arr[0] = tmp_arr[0].replace(/"/g,"");
+
+   strlen = tmp_arr[0].length;
+  }
+  else
+  {
+   g_bCompileError=true;
+
+   g_LastErrorMessage=".ascii directive - argument is not a valid string.";
+
+   return;
+  }
+
+  if(pass==1)
+  {
+   // just increment the location counter:
+
+   g_LocationCounter += strlen;
+
+   if(strlen % 2 > 0) g_LocationCounter += 1;
+  }
+
+  if(pass==2)
+  {
+   // load the ascii values into memory:
+
+   for(i=0;i<strlen;i++)
+   {
+    g_mainMemory[g_LocationCounter] = tmp_arr[0].charCodeAt(i) & 0xff;
+
+    g_LocationCounter++;
+
+    if(g_LocationCounter%2==0) addToMachineCode(g_LocationCounter-2,i==1);
+   }
+
+   // make sure the next value of the CLC is even:
+
+   if(strlen % 2 > 0)
+   {
+    g_LocationCounter++;
+
+    addToMachineCode(g_LocationCounter-2,i==1);
+   }
+  }
+ }
+
+ if(bProcessed==false)
+ {
+  g_bCompileError=true;
+
+  g_LastErrorMessage="Unknown directive.";
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function increment_location_counter(line)
+{
+ // compile - pass 1:
+
+ // look at the operands of an instruction to determine
+ // how much to increment the location counter: 
+
+ var ptn_branch_1 = /(^|\s{1,})(br|bne|beq|bpl|bmi|bvc|bvs|bcc|bcs)\s{1,}/i;
+ var ptn_branch_2 = /(^|\s{1,})(bge|blt|bgt|ble|bhi|blos|bhis|blo)\s{1,}/i;
+
+ // branch operations - assemble to 1 word:
+
+ if(ptn_branch_1.test(line) || ptn_branch_2.test(line))
+ {
+  g_LocationCounter += 2;
+
+  return;
+ }
+
+ var ptn_misc = /(sob|rts)\s{1,}/i;
+
+ // SOB and RTS instructions - assemble to 1 word:
+
+ if(ptn_misc.test(line))
+ {
+  g_LocationCounter += 2;
+
+  return;
+ }
+
+ var ptn_no_op_1 = /(^|\s{1,})(nop|halt|clc|clv|clz|cln)(\s{1,}|$)/i;
+ var ptn_no_op_2 = /(^|\s{1,})(sec|sev|sez|sen|ccc|scc)(\s{1,}|$)/i;
+
+ // condition code operations - assemble to 1 word:
+
+ if(ptn_no_op_1.test(line) || ptn_no_op_2.test(line))
+ {
+  g_LocationCounter += 2;
+
+  return;
+ }
+
+ // strip off any labels:
+
+ var ptn_label = /[a-zA-Z][a-zA-Z0-9_]{0,}:/g;
+
+ line = line.replace(ptn_label,"");
+
+ var tmp_arr = [];
+
+ var ptn_not_del = /[^\s,]{1,}/g;
+
+ // single operand instructions:
+
+ var ptn_single_op_1 = /(^|\s{1,})(clr|clrb|com|comb|inc|incb|dec|decb)\s{1,}/i;
+ var ptn_single_op_2 = /(^|\s{1,})(neg|negb|tst|tstb|asr|asrb|asl|aslb)\s{1,}/i;
+ var ptn_single_op_3 = /(^|\s{1,})(ror|rorb|rol|rolb|swab|adc|adcb)\s{1,}/i;
+ var ptn_single_op_4 = /(^|\s{1,})(sbc|sbcb|sxt|jmp)\s{1,}/i;
+
+ var bSingle_op = ptn_single_op_1.test(line) || ptn_single_op_2.test(line);
+
+ bSingle_op = bSingle_op || ptn_single_op_3.test(line);
+
+ bSingle_op = bSingle_op || ptn_single_op_4.test(line);
+
+ // single operand instructions - assemble to 1 or 2 words:
+
+ if(bSingle_op)
+ {
+  g_LocationCounter += 2;
+
+  // get the operand:
+
+  tmp_arr = line.match(ptn_not_del);
+
+  if(tmp_arr == null || tmp_arr.length != 2)
+  {
+   // error:
+
+   g_bCompileError=true;
+
+   g_LastErrorMessage="Incorrect number of operands.";
+  }
+  else
+  {
+   if(extraWordAssembled(tmp_arr[1])) g_LocationCounter += 2;
+  }
+
+  return;
+ }
+
+ // double operand instructions - assemble to (1-3) words:
+
+ var ptn_double_op_1 = /(^|\s{1,})(mov|movb|cmp|cmpb|add|sub)\s{1,}/i;
+ var ptn_double_op_2 = /(^|\s{1,})(bit|bitb|bic|bicb|bis|bisb)\s{1,}/i;
+ var ptn_double_op_3 = /(^|\s{1,})(jsr|ash|ashc|xor)\s{1,}/i;
+
+ var bDouble_op = ptn_double_op_1.test(line) || ptn_double_op_2.test(line);
+
+ bDouble_op = bDouble_op || ptn_double_op_3.test(line);
+
+ if(bDouble_op)
+ {
+  g_LocationCounter += 2;
+
+  // get the operands:
+
+  tmp_arr = line.match(ptn_not_del);
+
+  if(tmp_arr == null || tmp_arr.length != 3)
+  {
+   // error:
+
+   g_bCompileError=true;
+
+   g_LastErrorMessage="Incorrect number of operands.";
+  }
+  else
+  {
+   if(extraWordAssembled(tmp_arr[1])) g_LocationCounter += 2;
+
+   if(extraWordAssembled(tmp_arr[2])) g_LocationCounter += 2;
+  }
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function extraWordAssembled(operand)
+{
+ var bExtra = false;
+
+ // an extra word will be assembled if the
+ // operand doesn't match the patterns:
+
+ // Rn, (Rn), -(Rn), (Rn)+, @Rn, @-(Rn), @(Rn)+
+
+ // where Rn can also be SP, PC or %n
+
+ var ptn_reg_1 = /^(@|)(\x2d|)(\x28|)(R|%)\d(\x29|)(\x2b|)$/i;
+ var ptn_reg_2 = /^(@|)(\x2d|)(\x28|)(SP|PC)(\x29|)(\x2b|)$/i;
+
+ if(ptn_reg_1.test(operand) == false)
+ {
+  if(ptn_reg_2.test(operand) == false)
+  {
+   bExtra = true;
+  }
+ }
+
+ return bExtra;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function calc_instr_word(line)
+{
+ // convert a line of code to a 16 bit instruction word:
+
+ var bError=false;
+
+ var instr_word = 0;
+
+ var ptn_instr = /^\s{0,}[A-Za-z]{2,4}/;
+
+ var ptn_spc = /\s{1,}/g;
+
+ var ptn_label = /[a-zA-Z][a-zA-Z0-9_]{0,}:/g;
+
+ var tmp_arr;
+
+ var i;
+
+ // strip off any labels:
+
+ line = line.replace(ptn_label,"");
+
+ if(ptn_instr.test(line))
+ {
+  tmp_arr = line.match(ptn_instr);
+
+  var instr = tmp_arr[0].toLowerCase();
+
+  // remove any white space:
+
+  instr = tmp_arr[0].replace(ptn_spc,"");
+
+  // get the instruction code:
+
+  instr_word = getInstrCode(instr);
+
+  if(instr_word==0)
+  {
+   // still zero - might be a condition code operation:
+
+   instr_word = getOpCode_CC(line);
+  }
+
+  if(instr_word==0)
+  {
+   // still zero - halt the only other option:
+
+   if(instr.toLowerCase() != "halt")
+   {
+    // error - line does not contain any instructions:
+
+    g_bCompileError=true;
+
+    g_LastErrorMessage="Could not identify any instructions.";
+   }
+   else
+   {
+    // assemble the halt instruction:
+
+    g_mainMemory[g_LocationCounter++] = 0;
+
+    g_mainMemory[g_LocationCounter++] = 0;
+
+    addToMachineCode(g_LocationCounter-2,1);
+   }
+
+   return;
+  }
+
+  var ptn_del = /[^\s,]{1,}/g;
+
+  if(TestSingleOp(instr_word))
+  {
+   // assemble a single op instruction: 
+
+   // strip off the instruction mnemonic:
+
+   line = line.replace(ptn_instr,"");
+
+   // get the operands into an array:
+
+   tmp_arr = line.match(ptn_del);
+
+   if(tmp_arr==null || tmp_arr.length != 1)
+   {
+    // error - can only be 1 operand:
+
+    g_bCompileError=true;
+
+    g_LastErrorMessage="Incorrect number of operands.";
+
+    return;
+   }
+   else
+   {
+    bError = assembleSingleOpInstr(instr_word,tmp_arr[0]);
+
+    if(bError)
+    {
+     g_bCompileError=true;
+
+     g_LastErrorMessage="Could not assemble the instruction.";
+
+     return;
+    }
+   }
+  }
+
+  if(TestDoubleOp(instr_word))
+  {
+   // assemble a double op instruction: 
+
+   // strip off the instruction mnemonic:
+
+   line = line.replace(ptn_instr,"");
+
+   // get the operands into an array:
+
+   tmp_arr = line.match(ptn_del);
+
+   if(tmp_arr==null || tmp_arr.length != 2)
+   {
+    // error - must be 2 operands:
+
+    g_bCompileError=true;
+
+    g_LastErrorMessage="Incorrect number of operands.";
+
+    return;
+   }
+   else
+   {
+    bError = assembleDoubleOpInstr(instr_word,tmp_arr[0],tmp_arr[1]);
+
+    if(bError)
+    {
+     g_bCompileError=true;
+
+     g_LastErrorMessage="Could not assemble the instruction.";
+
+     return;
+    }
+   }
+  }
+
+  if(Test_CC_Op(instr_word))
+  {
+   // assemble condition code operations:
+
+   g_mainMemory[g_LocationCounter++] = instr_word & 0xff;
+
+   g_mainMemory[g_LocationCounter++] = (instr_word & 0xff00) >>> 8;
+
+   addToMachineCode(g_LocationCounter-2,1);
+  }
+
+  if(TestBranchOp(instr_word))
+  {
+   // assemble branch operations:
+
+   // strip off the instruction mnemonic:
+
+   line = line.replace(ptn_instr,"");
+
+   // get the operands into an array:
+
+   tmp_arr = line.match(ptn_del);
+
+   if(tmp_arr==null || tmp_arr.length != 1)
+   {
+    // error - can only be 1 operand:
+
+    g_bCompileError=true;
+
+    g_LastErrorMessage="Incorrect number of operands.";
+
+    return;
+   }
+   else
+   {
+    bError = assembleBranchOpInstr(instr_word,tmp_arr[0]);
+
+    if(bError)
+    {
+     g_bCompileError=true;
+
+     g_LastErrorMessage = "Invalid branch address: the branch address must be\r\n"
+
+     g_LastErrorMessage += "even and within -200 to 177 words of the PC value."
+
+     return;
+    }
+   }
+  }
+
+  if(TestRegisterOp(instr_word))
+  {
+   // assemble register operations:
+
+   // strip off the instruction mnemonic:
+
+   line = line.replace(ptn_instr,"");
+
+   // get the operands into an array:
+
+   tmp_arr = line.match(ptn_del);
+
+   if(tmp_arr==null || tmp_arr.length != 2)
+   {
+    // error - must be 2 operands:
+
+    g_bCompileError=true;
+
+    g_LastErrorMessage="Incorrect number of operands.";
+
+    return;
+   }
+   else
+   {
+    var test = instr_word & 0177000;
+
+    if(test >= 072000 && test <= 073000)
+    {
+     // ASH, ASHC:
+
+     // e.g. ASH src R
+
+     bError = assembleRegisterOpInstr(instr_word,tmp_arr[1],tmp_arr[0]);
+    }
+    else
+    {
+     // JSR or XOR:
+
+     // e.g. JSR R dest
+
+     bError = assembleRegisterOpInstr(instr_word,tmp_arr[0],tmp_arr[1]);
+    }
+
+    if(bError)
+    {
+     g_bCompileError=true;
+
+     g_LastErrorMessage="Could not assemble the instruction.";
+
+     return;
+    }
+   }
+  }
+
+  if(TestMiscOp(instr_word))
+  {
+   // assemble miscellaneous operations:
+
+   // strip off the instruction mnemonic:
+
+   line = line.replace(ptn_instr,"");
+
+   // get the operands into an array:
+
+   tmp_arr = line.match(ptn_del);
+
+   bError = assembleMiscInstr(instr_word,tmp_arr);
+
+   if(bError)
+   {
+    g_bCompileError=true;
+
+    g_LastErrorMessage="Could not assemble the instruction.";
+
+    return;
+   }
+  }
+
+  if(instr_word==0100)
+  {
+   // assemble the jmp instruction: 
+
+   // strip off the instruction mnemonic:
+
+   line = line.replace(ptn_instr,"");
+
+   // get the operands into an array:
+
+   tmp_arr = line.match(ptn_del);
+
+   if(tmp_arr==null || tmp_arr.length != 1)
+   {
+    // error - can only be 1 operand:
+
+    g_bCompileError=true;
+
+    g_LastErrorMessage="Incorrect number of operands.";
+
+    return;
+   }
+   else
+   {
+    bError = assembleSingleOpInstr(instr_word,tmp_arr[0]);
+
+    if(bError)
+    {
+     g_bCompileError=true;
+
+     g_LastErrorMessage="Could not assemble the instruction.";
+
+     return;
+    }
+   }
+  }
+ }
+ else
+ {
+  // error:
+
+  g_bCompileError=true;
+
+  g_LastErrorMessage="Could not identify any instructions.";
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function getInstrCode(instr)
+{
+ // use the instruction mnemonic to get the op code:
+
+ var op_code=0;
+
+ instr = instr.toLowerCase();
+
+ // double operand - general:
+
+ if(instr=="mov") op_code=010000;
+ if(instr=="movb") op_code=0110000;
+ if(instr=="cmp") op_code=020000;
+ if(instr=="cmpb") op_code=0120000;
+ if(instr=="add") op_code=060000;
+ if(instr=="sub") op_code=0160000;
+
+ // double operand - logical:
+
+ if(instr=="bit") op_code=030000;
+ if(instr=="bitb") op_code=0130000;
+ if(instr=="bic") op_code=040000;
+ if(instr=="bicb") op_code=0140000;
+ if(instr=="bis") op_code=050000;
+ if(instr=="bisb") op_code=0150000;
+
+ // double operand - register:
+
+ if(instr=="ash") op_code=072000;
+ if(instr=="ashc") op_code=073000;
+ if(instr=="xor") op_code=074000;
+
+ // single operand - general:
+
+ if(instr=="clr") op_code=05000;
+ if(instr=="clrb") op_code=0105000;
+ if(instr=="com") op_code=05100;
+ if(instr=="comb") op_code=0105100;
+ if(instr=="inc") op_code=05200;
+ if(instr=="incb") op_code=0105200;
+ if(instr=="dec") op_code=05300;
+ if(instr=="decb") op_code=0105300;
+ if(instr=="neg") op_code=05400;
+ if(instr=="negb") op_code=0105400;
+ if(instr=="tst") op_code=05700;
+ if(instr=="tstb") op_code=0105700;
+
+ // single operand - shift and rotate:
+
+ if(instr=="asr") op_code=06200;
+ if(instr=="asrb") op_code=0106200;
+ if(instr=="asl") op_code=06300;
+ if(instr=="aslb") op_code=0106300;
+ if(instr=="ror") op_code=06000;
+ if(instr=="rorb") op_code=0106000;
+ if(instr=="rol") op_code=06100;
+ if(instr=="rolb") op_code=0106100;
+ if(instr=="swab") op_code=0300;
+
+ // single operand - multiple precision:
+
+ if(instr=="adc") op_code=05500;
+ if(instr=="adcb") op_code=0105500;
+ if(instr=="sbc") op_code=05600;
+ if(instr=="sbcb") op_code=0105600;
+ if(instr=="sxt") op_code=06700;
+
+ // branch:
+
+ if(instr=="br") op_code=0400;
+ if(instr=="bne") op_code=01000;
+ if(instr=="beq") op_code=01400;
+ if(instr=="bpl") op_code=0100000;
+ if(instr=="bmi") op_code=0100400;
+ if(instr=="bvc") op_code=0102000;
+ if(instr=="bvs") op_code=0102400;
+ if(instr=="bcc") op_code=0103000;
+ if(instr=="bcs") op_code=0103400;
+
+ // branch - signed conditional:
+
+ if(instr=="bge") op_code=02000;
+ if(instr=="blt") op_code=02400;
+ if(instr=="bgt") op_code=03000;
+ if(instr=="ble") op_code=03400;
+
+ // branch - unsigned conditional:
+
+ if(instr=="bhi") op_code=0101000;
+ if(instr=="blos") op_code=0101400;
+ if(instr=="bhis") op_code=0103000;
+ if(instr=="blo") op_code=0103400;
+
+ // jump and subroutine:
+
+ if(instr=="jmp") op_code=0100;
+ if(instr=="jsr") op_code=04000;
+ if(instr=="rts") op_code=0200;
+ if(instr=="sob") op_code=077000;
+
+ // no operation:
+
+ if(instr=="nop") op_code=0240;
+
+ return op_code;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function getOpCode_CC(line)
+{
+ // use the instruction mnemonic to get the op code:
+
+ var op_code=0;
+
+ var i;
+
+ var ptn_del = /[^\s]{1,}/g;
+
+ var tmp_arr = line.match(ptn_del);
+
+ for(i=0;i<tmp_arr.length;i++)
+ {
+  tmp_arr[i] = tmp_arr[i].toLowerCase();
+
+  var test_code=0;
+
+  if(tmp_arr[i].indexOf("clc") >= 0) test_code = 0241;
+  if(tmp_arr[i].indexOf("clv") >= 0) test_code = 0242;
+  if(tmp_arr[i].indexOf("clz") >= 0) test_code = 0244;
+  if(tmp_arr[i].indexOf("cln") >= 0) test_code = 0250;
+  if(tmp_arr[i].indexOf("sec") >= 0) test_code = 0261;
+  if(tmp_arr[i].indexOf("sev") >= 0) test_code = 0262;
+  if(tmp_arr[i].indexOf("sez") >= 0) test_code = 0264;
+  if(tmp_arr[i].indexOf("sen") >= 0) test_code = 0270;
+  if(tmp_arr[i].indexOf("ccc") >= 0) test_code = 0257;
+  if(tmp_arr[i].indexOf("scc") >= 0) test_code = 0277;
+
+  if(test_code==0)
+  {
+   // no match - return 0:
+
+   op_code=0;
+
+   break;
+  }
+
+  op_code |= test_code;
+ }
+
+ return op_code;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function TestSingleOp(instr_word)
+{
+ if((instr_word & 0177700)==0300)
+ {
+  // SWAB:
+
+  return true;
+ }
+
+ var bMatch=false;
+
+ instr_word = instr_word & 077700;
+
+ if(instr_word >= 05000 && instr_word <= 06700) bMatch=true;
+
+ return bMatch;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function TestDoubleOp(instr_word)
+{
+ var bMatch=false;
+
+ instr_word = instr_word & 070000;
+
+ if(instr_word >= 010000 && instr_word <= 060000) bMatch=true;
+
+ return bMatch;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function Test_CC_Op(instr_word)
+{
+ var bMatch=false;
+
+ if(instr_word >= 0240 && instr_word <= 0277) bMatch=true;
+
+ return bMatch;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function TestBranchOp(instr_word)
+{
+ var bMatch=false;
+
+ if((instr_word & 074000) == 0 && (instr_word >= 0400)) bMatch=true;
+
+ return bMatch;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function TestRegisterOp(instr_word)
+{
+ var bMatch=false;
+
+ if((instr_word & 0177000) == 04000) bMatch=true; // JSR
+
+ instr_word &= 0177000;
+
+ // ASH, ASHC, XOR:
+
+ if(instr_word >= 072000 && instr_word <= 074000) bMatch=true;
+
+ return bMatch;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function TestMiscOp(instr_word)
+{
+ var bMatch=false;
+
+ if(instr_word >= 0200 && instr_word <= 0207) bMatch=true; // RTS
+
+ if((instr_word & 0177000) == 077000) bMatch=true; // SOB
+
+ return bMatch;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function assembleSingleOpInstr(instr_word,dest)
+{
+ // generate the machine code for a single operand instruction:
+
+ var bError=false;
+
+ // use the operand to get the 6-bit address field:
+
+ var result = calc_addr_field(dest);
+
+ if(result.error_flag==1)
+ {
+  bError=true;
+ }
+ else
+ {
+  instr_word = (instr_word + result.addr_field) & 0177777;
+
+  // assemble the instruction word in memory:
+
+  g_mainMemory[g_LocationCounter++] = instr_word & 0xff;
+
+  g_mainMemory[g_LocationCounter++] = (instr_word & 0xff00) >>> 8;
+
+  addToMachineCode(g_LocationCounter-2,1);
+
+  if(result.use_extra_word==1)
+  {
+   // assemble the extra word in memory:
+
+   var extra_word = calc_extra_word(dest);
+
+   g_mainMemory[g_LocationCounter++] = extra_word & 0xff;
+
+   g_mainMemory[g_LocationCounter++] = (extra_word & 0xff00) >>> 8;
+
+   addToMachineCode(g_LocationCounter-2,0);
+  }
+ }
+
+ return bError;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function assembleDoubleOpInstr(instr_word,src,dest)
+{
+ // generate the machine code for a double operand instruction:
+
+ var bError=false;
+
+ // calc the 6-bit address fields for the src and dest operands:
+
+ var result1 = calc_addr_field(src);
+
+ var result2 = calc_addr_field(dest);
+
+ if(result1.error_flag || result2.error_flag)
+ {
+  bError=true;
+ }
+ else
+ {
+  instr_word += (result1.addr_field << 6) & 07700;
+
+  instr_word += result2.addr_field & 077;
+
+  instr_word &= 0177777;
+
+  // assemble the instruction word in memory:
+
+  g_mainMemory[g_LocationCounter++] = instr_word & 0xff;
+
+  g_mainMemory[g_LocationCounter++] = (instr_word & 0xff00) >>> 8;
+
+  addToMachineCode(g_LocationCounter-2,1);
+
+  var extra_word = 0;
+
+  if(result1.use_extra_word==1)
+  {
+   // assemble the extra word in memory:
+
+   extra_word = calc_extra_word(src);
+
+   g_mainMemory[g_LocationCounter++] = extra_word & 0xff;
+
+   g_mainMemory[g_LocationCounter++] = (extra_word & 0xff00) >>> 8;
+
+   addToMachineCode(g_LocationCounter-2,0);
+  }
+
+  if(result2.use_extra_word==1)
+  {
+   // assemble the extra word in memory:
+
+   extra_word = calc_extra_word(dest);
+
+   g_mainMemory[g_LocationCounter++] = extra_word & 0xff;
+
+   g_mainMemory[g_LocationCounter++] = (extra_word & 0xff00) >>> 8;
+
+   addToMachineCode(g_LocationCounter-2,0);
+  }
+ }
+
+ return bError;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function assembleBranchOpInstr(instr_word,br_addr)
+{
+ // generate the machine code for a branch instruction:
+
+ var bError=false;
+
+ var addr = calc_expression(br_addr);
+
+ // the branch address must be even and within
+ // 128 words of the current location:
+
+ if(addr%2>0) bError = true;
+
+ var offset =  addr - g_LocationCounter - 2;
+
+ offset /= 2;
+
+ if(offset < -128 || offset > 127)
+ {
+  bError=true;
+ }
+ else
+ {
+  if(offset<0)
+  {
+   offset *= -1;
+
+   offset = (~offset + 1) & 0xff;
+  }
+
+  instr_word += (offset & 0xff);
+
+  // assemble in memory:
+
+  g_mainMemory[g_LocationCounter++] = instr_word & 0xff;
+
+  g_mainMemory[g_LocationCounter++] = (instr_word & 0xff00) >>> 8;
+
+  addToMachineCode(g_LocationCounter-2,1);
+ }
+
+ return bError;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function assembleRegisterOpInstr(instr_word,reg_op,dest)
+{
+ // generate the machine code for a register instruction:
+
+ // the instruction is of the form: XXXXRDD or XXXXRSS, where
+ // R is a register number and DD or SS a 6-bit address field:
+
+ var bError=false;
+
+ // use the operand to get the 6-bit address field:
+
+ var result = calc_addr_field(dest);
+
+ // get the register number:
+
+ if(reg_op.toLowerCase()=="sp") reg_op="r6";
+ if(reg_op.toLowerCase()=="pc") reg_op="r7";
+
+ var ptn_register = /^(R|%)\d$/i;
+
+ var reg_num=0;
+
+ if(ptn_register.test(reg_op))
+ {
+  reg_num = parseInt(reg_op[1],8);    
+
+  reg_num <<= 6;
+ }
+ else
+ {
+  bError=true;
+
+  return bError;
+ }
+
+ if(result.error_flag==1)
+ {
+  bError=true;
+ }
+ else
+ {
+  instr_word = (instr_word + reg_num + result.addr_field) & 0177777;
+
+  // assemble the instruction word in memory:
+
+  g_mainMemory[g_LocationCounter++] = instr_word & 0xff;
+
+  g_mainMemory[g_LocationCounter++] = (instr_word & 0xff00) >>> 8;
+
+  addToMachineCode(g_LocationCounter-2,1);
+
+  if(result.use_extra_word==1)
+  {
+   // assemble the extra word in memory:
+
+   var extra_word = calc_extra_word(dest);
+
+   g_mainMemory[g_LocationCounter++] = extra_word & 0xff;
+
+   g_mainMemory[g_LocationCounter++] = (extra_word & 0xff00) >>> 8;
+
+   addToMachineCode(g_LocationCounter-2,0);
+  }
+ }
+
+ return bError;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function assembleMiscInstr(instr_word,ops_arr)
+{
+ var bError=false;
+
+ var ptn_register=/^(R|%)\d$/i;
+
+ var n_Reg=0;
+
+ if(instr_word == 0200)
+ {
+  // assemble the RTS operation:
+
+  // RTS Rn
+
+  if(ops_arr==null || ops_arr.length > 1)
+  {
+   // must be 1 operand:
+
+   bError=true;
+  }
+  else
+  {
+   ops_arr[0] = ops_arr[0].toLowerCase();
+
+   if(ops_arr[0]=="sp") ops_arr[0]="r6";
+   if(ops_arr[0]=="pc") ops_arr[0]="r7";
+
+   if(ptn_register.test(ops_arr[0]))
+   {
+    n_Reg = parseInt(ops_arr[0][1],8);
+
+    instr_word = (instr_word + n_Reg) & 0177777;
+
+    // assemble the instruction word in memory:
+
+    g_mainMemory[g_LocationCounter++] = instr_word & 0xff;
+
+    g_mainMemory[g_LocationCounter++] = (instr_word & 0xff00) >>> 8;
+
+    addToMachineCode(g_LocationCounter-2,1);
+   }
+   else
+   {
+    bError=true;
+
+    return bError;
+   }
+  }
+ }
+
+ if(instr_word == 077000)
+ {
+  // assemble the SOB operation:
+
+  // SOB Rn addr
+
+  if(ops_arr==null || ops_arr.length != 2)
+  {
+   // must be 2 operands:
+
+   bError=true;
+  }
+  else
+  {
+   ops_arr[0] = ops_arr[0].toLowerCase();
+
+   if(ops_arr[0]=="sp") ops_arr[0]="r6";
+   if(ops_arr[0]=="pc") ops_arr[0]="r7";
+
+   if(ptn_register.test(ops_arr[0]))
+   {
+    n_Reg = parseInt(ops_arr[0][1],8);
+
+    n_Reg = (n_Reg << 6) & 0700;
+
+    var addr = calc_expression(ops_arr[1]);
+
+    var offset = g_LocationCounter + 2 - addr;
+
+    // divide the offset by 2:
+
+    offset >>>= 1;
+
+    if(offset < 0 || offset > 63)
+    {
+     bError=true;
+    }
+    else
+    {
+     offset &= 077;
+
+     instr_word = (instr_word + n_Reg + offset) & 0177777;
+
+     // assemble the instruction word in memory:
+
+     g_mainMemory[g_LocationCounter++] = instr_word & 0xff;
+
+     g_mainMemory[g_LocationCounter++] = (instr_word & 0xff00) >>> 8;
+
+     addToMachineCode(g_LocationCounter-2,1);
+    }
+   }
+   else
+   {
+    bError=true;
+
+    return bError;
+   }
+  }
+ }
+
+ return bError;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function evaluateSymbols(op_expr)
+{
+ // if the symbols SP and PC have been used
+ // instead of R6 and R7, replace them here:
+
+ // Ascii : 0x28 = '(', 0x29 = ')'
+
+ var ptn_sp = /(\x28sp\x29|@sp)/i;
+
+ // SP = R6:
+
+ if(ptn_sp.test(op_expr))
+ {
+  op_expr = op_expr.toLowerCase().replace("sp","r6");
+ }
+
+ var ptn_pc = /(\x28pc\x29|@pc)/i; 
+
+ // PC = R7:
+
+ if(ptn_pc.test(op_expr))
+ {
+  op_expr = op_expr.toLowerCase().replace("pc","r7");
+ }
+
+ if(op_expr.toLowerCase() == "sp") op_expr = "r6";
+
+ if(op_expr.toLowerCase() == "pc") op_expr = "r7";
+
+ // just return if the operand doesn't contain any symbols or expressions: 
+
+ var ptn_register = /^(@|)(\x2d|)(\x28|)(R|%)\d(\x29|)(\x2b|)$/i;
+
+ if(ptn_register.test(op_expr)) return op_expr;
+
+ // evaluate any expressions in the operand and replace with a number:
+
+ var ptn_expr = /[^#@\x28\x29]{1,}/;
+
+ if(ptn_expr.test(op_expr))
+ {
+  var tmp_arr = op_expr.match(ptn_expr);
+
+  if(tmp_arr != null)
+  {
+   var value = calc_expression(tmp_arr[0]);
+
+   op_expr = op_expr.replace(ptn_expr,value.toString(8));
+  }
+ }
+
+ return op_expr;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function calc_addr_field(op_expr)
+{
+ // convert an operand to a 6-bit address field:
+
+ var result =
+ {
+  addr_field: 0,
+  use_extra_word: 0,
+  error_flag: 0
+ };
+
+ // convert any symbols or expressions to a number:
+
+ // e.g. if A=2, clr @A(R5) --> clr @2(R5):
+
+ op_expr=evaluateSymbols(op_expr);
+
+ var test_expr = op_expr;
+
+ var reg_val=0;
+
+ // Note: Rn can be %n
+
+ // Ascii : 0x2b = '+', 0x2d = '-', 0x28 = '(', 0x29 = ')'
+
+ // test for the patterns: Rn, @Rn, (Rn)
+
+ // modes 0 and 1:
+
+ var ptn_reg_1 = /^[@\x28]{0,1}(R|%)\d{1}[\x29]{0,1}$/i;
+
+ if(ptn_reg_1.test(test_expr))
+ {
+  if(op_expr.indexOf("@") >= 0)
+  {
+   result.addr_field = 010;
+
+   op_expr = op_expr.replace("@","");
+  }
+
+  if(op_expr.indexOf("(") >= 0)
+  {
+   result.addr_field = 010;
+
+   op_expr = op_expr.replace("(","");
+
+   op_expr = op_expr.replace(")","");
+  }
+
+  // the 2nd char is the register number:
+
+  reg_val = parseInt(op_expr[1]);
+
+  if(reg_val < 0 || reg_val > 7)
+  {
+   result.error_flag = 1;
+  }
+  else
+  {
+   result.addr_field += reg_val;
+  }
+
+  return result;
+ }
+
+ // test for the patterns: -(Rn), @-(Rn)
+
+ // modes 4 and 5:
+
+ var ptn_reg_2 = /^[@]{0,1}\x2d\x28(R|%)\d{1}\x29$/i;
+
+ if(ptn_reg_2.test(test_expr))
+ {
+  result.addr_field = 040;
+
+  op_expr = op_expr.replace("(","");
+
+  op_expr = op_expr.replace(")","");
+
+  op_expr = op_expr.replace("-","");
+
+  if(op_expr.indexOf("@") >= 0)
+  {
+   result.addr_field += 010;
+
+   op_expr = op_expr.replace("@","");
+  }
+
+  // the 2nd char is the register number:
+
+  reg_val = parseInt(op_expr[1]);
+
+  if(reg_val < 0 || reg_val > 7)
+  {
+   result.error_flag = 1;
+  }
+  else
+  {
+   result.addr_field += reg_val;
+  }
+
+  return result;
+ }
+
+ // test for the patterns: (Rn)+, @(Rn)+
+
+ // modes 2 and 3:
+
+ var ptn_reg_3 = /^[@]{0,1}\x28(R|%)\d{1}\x29\x2b$/i;
+
+ if(ptn_reg_3.test(test_expr))
+ {
+  result.addr_field = 020;
+
+  op_expr = op_expr.replace("(","");
+
+  op_expr = op_expr.replace(")","");
+
+  op_expr = op_expr.replace("+","");
+
+  if(op_expr.indexOf("@") >= 0)
+  {
+   result.addr_field += 010;
+
+   op_expr = op_expr.replace("@","");
+  }
+
+  // the 2nd char is the register number:
+
+  reg_val = parseInt(op_expr[1]);
+
+  if(reg_val < 0 || reg_val > 7)
+  {
+   result.error_flag = 1;
+  }
+  else
+  {
+   result.addr_field += reg_val;
+  }
+
+  return result;
+ }
+
+ // test for the pattern: @(Rn) { a special case of @X(Rn) }:
+
+ // mode 7:
+
+ var ptn_reg_4 = /^@\x28(R|%)\d{1}\x29$/i;
+
+ if(ptn_reg_4.test(test_expr))
+ {
+  result.use_extra_word = 1;
+
+  result.addr_field = 070;
+
+  op_expr = op_expr.replace("(","");
+
+  op_expr = op_expr.replace(")","");
+
+  op_expr = op_expr.replace("@","");
+
+  // the 2nd char is the register number:
+
+  reg_val = parseInt(op_expr[1]);
+
+  if(reg_val < 0 || reg_val > 7)
+  {
+   result.error_flag = 1;
+  }
+  else
+  {
+   result.addr_field += reg_val;
+  }
+
+  return result;
+ }
+
+ // test for the patterns: X(Rn) or @X(Rn) { X is a number }:
+
+ // modes 6 and 7:
+
+ var ptn_reg_5 = /^[@]{0,1}\d{1,}\x28(R|%)\d{1}\x29$/i;
+
+ if(ptn_reg_5.test(test_expr))
+ {
+  result.use_extra_word = 1;
+
+  result.addr_field = 060;
+
+  if(op_expr.indexOf("@") >= 0) result.addr_field += 010;
+
+  var ptn_del = /[^@R%\x28\x29]{1,}/gi;
+
+  var tmp_arr = op_expr.match(ptn_del);
+
+  reg_val = parseInt(tmp_arr[1]);
+
+  if(reg_val < 0 || reg_val > 7)
+  {
+   result.error_flag = 1;
+  }
+  else
+  {
+   result.addr_field += reg_val;
+  }
+
+  return result;
+ }
+
+ // test for the pattern: @#n { n is a number }:
+
+ // PC modes 2 and 3:
+
+ var ptn_reg_6 = /^[@]{0,1}#\d{1,}$/;
+
+ if(ptn_reg_6.test(test_expr))
+ {
+  result.use_extra_word = 1;
+
+  result.addr_field = 027;
+
+  if(op_expr.indexOf("@") >= 0) result.addr_field += 010;
+
+  return result;
+ }
+
+ // test for the pattern: @A { A is a number }:
+
+ // PC modes 6 and 7:
+
+ var ptn_reg_7 = /^[@]{0,1}\d{1,}$/;
+
+ if(ptn_reg_7.test(test_expr))
+ {
+  result.use_extra_word = 1;
+
+  result.addr_field = 067;
+
+  if(op_expr.indexOf("@") >= 0) result.addr_field += 010;
+ }
+
+ return result;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function calc_extra_word(op_expr)
+{
+ // extract the extra word to be assembled from the operand:
+
+ var extra_word = 0;
+
+ // convert any symbols or expressions to a number:
+
+ // e.g. if A=2, clr @A(R5) --> clr @2(R5):
+
+ op_expr=evaluateSymbols(op_expr);
+
+ var test_expr = op_expr;
+
+ // Note: Rn can be %n
+
+ // Ascii : 0x2b = '+', 0x2d = '-', 0x28 = '(', 0x29 = ')'
+
+ // test for the pattern: @(Rn) { a special case of @X(Rn) }:
+
+ // mode 7:
+
+ var ptn_reg_4 = /^@\x28(R|%)\d{1}\x29$/i;
+
+ if(ptn_reg_4.test(test_expr))
+ {
+  return 0;
+ }
+
+ // test for the patterns: X(Rn) or @X(Rn) { X is a number }:
+
+ // modes 6 and 7:
+
+ var ptn_reg_5 = /^[@]{0,1}\d{1,}\x28(R|%)\d{1}\x29$/i;
+
+ if(ptn_reg_5.test(test_expr))
+ {
+  var ptn_del = /[^@R%\x28\x29]{1,}/gi;
+
+  var tmp_arr = op_expr.match(ptn_del);
+
+  extra_word = parseInt(tmp_arr[0],8);
+
+  return extra_word;
+ }
+
+ // test for the pattern: @#n { n is a number }:
+
+ // PC modes 2 and 3:
+
+ var ptn_reg_6 = /^[@]{0,1}#\d{1,}$/;
+
+ if(ptn_reg_6.test(test_expr))
+ {
+  op_expr = op_expr.replace("@","");
+
+  op_expr = op_expr.replace("#","");
+
+  extra_word = parseInt(op_expr,8);
+
+  return extra_word;
+ }
+
+ // test for the pattern: @A { A is a number }:
+
+ // PC modes 6 and 7:
+
+ var ptn_reg_7 = /^[@]{0,1}\d{1,}$/;
+
+ if(ptn_reg_7.test(test_expr))
+ {
+  op_expr = op_expr.replace("@","");
+
+  // calculate X from A, where X is the offset relative to
+  // the current (location counter + 2):
+
+  extra_word = parseInt(op_expr,8) - g_LocationCounter - 2;
+ }
+
+ return extra_word;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function calcEffectiveAddress(addr_field,byte_op)
+{
+ // for register modes other than 0, calculate
+ // and return the effective address:
+
+ var mode = (addr_field & 070) >>> 3;
+
+ var n_reg = addr_field & 07;
+
+ var eff_addr=0;
+
+ switch(mode)
+ {
+  case 2: // Auto-Increment Mode.
+
+  // first read the effective address: 
+
+  eff_addr = g_Registers[n_reg];
+
+  // then increment the register value:
+
+  // always increment the SP or PC registers by 2:
+
+  if(byte_op && n_reg < 6)
+  {
+   g_Registers[n_reg] = address_Add(g_Registers[n_reg],1);
+  }
+  else
+  {
+   g_Registers[n_reg] = address_Add(g_Registers[n_reg],2);
+  } 
+
+  break;
+
+  case 4: // Auto-Decrement Mode.
+
+  // first decrement the register value:
+
+  // always decrement the SP register by 2:
+
+  // the PC register cannot be decremented:
+
+  if(byte_op && n_reg < 6)
+  {
+   g_Registers[n_reg] = address_Sub(g_Registers[n_reg],1);
+  }
+  else
+  {
+   if(n_reg==7)
+   {
+    // error:
+
+    // Set the Trap bit:
+
+    g_TNZVC |= 16;
+
+    g_LastTrapMessage = "Cannot use Auto-Decrement mode with the PC register.";
+   }
+   else
+   {
+    // the SP (R6):
+
+    g_Registers[n_reg] = address_Sub(g_Registers[n_reg],2);
+   }
+  } 
+
+  // then read the effective address: 
+
+  eff_addr = g_Registers[n_reg];
+
+  break;
+
+  case 6: // Index Mode.
+
+  // read the word using the PC register first
+  // so that in the case where n_reg is the PC,
+  // relative mode will work correctly:
+
+  // get the base address:
+
+  eff_addr = use_PC_Register();
+
+  // add to the address in the register:
+
+  eff_addr = address_Add(eff_addr,g_Registers[n_reg]);
+
+  break;
+
+  case 1: // Register Deferred Mode.
+
+  // just read the effective address from the register:
+
+  eff_addr = g_Registers[n_reg];
+
+  break;
+
+  case 3: // Auto-Increment Deferred Mode.
+
+  // read and then increment:
+
+  // the register stores the address of the effective address:
+
+  eff_addr = g_Registers[n_reg];
+
+  eff_addr = readWordFromMemory(eff_addr);
+
+  // mode 3 always increments by 2:
+
+  g_Registers[n_reg] = address_Add(g_Registers[n_reg],2);
+
+  break;
+
+  case 5: // Auto-Decrement Deferred Mode.
+
+  if(n_reg==7)
+  {
+   // error - the PC cannot decrement:
+
+   // Set the Trap bit:
+
+   g_TNZVC |= 16;
+
+   g_LastTrapMessage = "Cannot use Auto-Decrement Deferred mode with the PC register.";
+  }
+  else
+  {
+   // decrement and then read:
+
+   // mode 5 always decrements by 2:
+
+   g_Registers[n_reg] = address_Sub(g_Registers[n_reg],2);
+
+   // the register stores the address of the effective address:
+
+   eff_addr = g_Registers[n_reg];
+
+   eff_addr = readWordFromMemory(eff_addr);
+  }
+
+  break;
+
+  case 7: // Index Deferred Mode.
+
+  // read the word using the PC register first
+  // so that in the case where n_reg is the PC,
+  // relative deferred mode will work correctly:
+
+  // first get the address of the effective address:
+
+  eff_addr = use_PC_Register();
+
+  eff_addr = address_Add(eff_addr,g_Registers[n_reg]);
+
+  // now get the effective address:
+
+  eff_addr = readWordFromMemory(eff_addr);
+
+  break;
+ }
+
+ return eff_addr;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function use_PC_Register()
+{
+ // use the PC register to read a word from memory:
+
+ // (the PC is incremented by 2 every time it is used)
+
+ var wd=0;
+
+ if(g_Registers[7] < 0 || g_Registers[7] >= 0177777)
+ {
+  // error:
+
+  // Set the Trap bit:
+
+  g_TNZVC |= 16;
+
+  g_LastTrapMessage = "The PC contains an illegal address value.";
+ }
+ else if(g_Registers[7]%2 > 0)
+ {
+  g_LastTrapMessage = "The PC contains an odd address value.";
+ }
+ else
+ {
+  wd = g_mainMemory[g_Registers[7]];
+
+  wd += (g_mainMemory[g_Registers[7] + 1] << 8);
+
+  g_Registers[7] += 2;
+ }
+
+ return (wd & 0177777);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function readWordFromMemory(addr)
+{
+ // read a word from memory:
+
+ var wd=0;
+
+ if(addr%2>0)
+ {
+  // error - odd address value:
+
+  // Set the Trap bit:
+
+  g_TNZVC |= 16;
+
+  g_LastTrapMessage = "Cannot read a word from an odd memory location.";
+ }
+ else
+ {
+  wd = g_mainMemory[addr];
+
+  wd += (g_mainMemory[addr+1] << 8);
+ }
+
+ return wd;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function executeInstruction()
+{
+ // execute the current instruction:
+
+ // use the address stored in the PC register
+ // to read the instruction:
+
+ var instr_word = use_PC_Register();
+
+ if(checkTrapBit()) return;
+
+ if(instr_word==0)
+ {
+  g_halt_flag=1;
+
+  return;
+ }
+
+ if(TestSingleOp(instr_word))
+ {
+  executeSingleOpInstr(instr_word);
+ }
+
+ if(TestDoubleOp(instr_word))
+ {
+  executeDoubleOpInstr(instr_word);
+ }
+
+ if(TestBranchOp(instr_word))
+ {
+  executeBranchInstr(instr_word);
+ }
+
+ if(TestRegisterOp(instr_word))
+ {
+  executeRegisterOpInstr(instr_word);
+ }
+
+ if(TestMiscOp(instr_word))
+ {
+  executeMiscInstr(instr_word);
+ }
+
+ if(Test_CC_Op(instr_word))
+ {
+  execute_CC_Instr(instr_word);
+ }
+
+ if((instr_word & 0177700) == 0100)
+ {
+  executeJump(instr_word);
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function executeSingleOpInstr(instr_word)
+{
+ var dest = instr_word & 077;
+
+ var byte_op=0;
+
+ // Is the instruction a Byte operation?
+
+ if(instr_word & 0100000) byte_op=1;
+
+ var mode = (instr_word & 070) >>> 3;
+
+ var eff_addr=0;
+
+ var n_reg=0;
+
+ var tmp=0;
+
+ var carry=0;
+
+ var msb=0;
+
+ // get the register number or effective address:
+
+ if(mode==0)
+ {
+  n_reg = dest & 07;
+ }
+ else
+ {
+  eff_addr = calcEffectiveAddress(dest,byte_op);
+ }
+
+ if(checkTrapBit()) return;
+
+ // SXT - Sign Extend:
+
+ if((instr_word & 07700) == 06700)
+ {
+  // sxt:
+
+  // if the N bit is clear, set Z:
+
+  g_TNZVC &= parseInt("1011",2);  
+
+  if((g_TNZVC & 8)==0) g_TNZVC |= 4;
+
+  // use the N bit to set the dest:
+
+  // N = 0 --> dest = 0
+  // N = 1 --> dest = -1 
+
+  if(mode==0)
+  {
+   if(g_TNZVC & 8)
+   {
+    g_Registers[n_reg]=0177777;
+   }
+   else
+   {
+    g_Registers[n_reg]=0;
+   }
+  }
+  else
+  {
+   if(g_TNZVC & 8)
+   {
+    g_mainMemory[eff_addr] = 0377;
+    g_mainMemory[eff_addr+1] = 0377;
+   }
+   else
+   {
+    g_mainMemory[eff_addr]=0;
+    g_mainMemory[eff_addr+1]=0;
+   }
+  }
+
+  return;
+ }
+
+ // the SWAB instruction (swap bytes):
+
+ if((instr_word & 07700) == 0300)
+ {
+  // swab:
+
+  g_TNZVC = 0;
+
+  // swap the bytes:
+
+  if(mode==0)
+  {
+   tmp = (g_Registers[n_reg] & 0xff) << 8;
+
+   tmp += (g_Registers[n_reg] & 0xff00) >>> 8;
+
+   g_Registers[n_reg] = tmp;
+  }
+  else
+  {
+   tmp = g_mainMemory[eff_addr];
+
+   g_mainMemory[eff_addr] = g_mainMemory[eff_addr+1];
+
+   g_mainMemory[eff_addr+1] = tmp;
+  }
+
+  // calc the Z and N bits:
+
+  if(mode==0)
+  {
+   if((g_Registers[n_reg] & 0xff)==0) g_TNZVC |= 4;
+   if(g_Registers[n_reg] & 0x80) g_TNZVC |= 8;
+  }
+  else
+  {
+   if(g_mainMemory[eff_addr]==0) g_TNZVC |= 4;
+   if(g_mainMemory[eff_addr] & 0x80) g_TNZVC |= 8;
+  }
+
+  // all done: 
+
+  return;
+ }
+
+ // the CLR or CLRB operation:
+
+ if((instr_word & 07700) == 05000)
+ {
+  // clear all the condition bits:
+
+  g_TNZVC = 0;
+
+  // clear the dest (dest = 0):
+
+  if(byte_op)
+  {
+   // clrb:
+
+   if(mode==0)
+   {
+    // clear the lower byte:
+
+    g_Registers[n_reg] &= 0xff00;
+   }
+   else
+   {
+    g_mainMemory[eff_addr]=0;
+   }
+  }
+  else
+  {
+   // clr:
+
+   if(mode==0)
+   {
+    g_Registers[n_reg] = 0;
+   }
+   else
+   {
+    g_mainMemory[eff_addr]=0;
+    g_mainMemory[eff_addr+1]=0;
+   }
+  }
+ }
+
+ // the COM or COMB operation:
+
+ if((instr_word & 07700) == 05100)
+ {
+  // set the carry bit:
+
+  g_TNZVC = 1;
+
+  // complement the dest (dest = ~dest):
+
+  if(byte_op)
+  {
+   // comb:
+
+   if(mode==0)
+   {
+    // complement the lower byte of the register:
+
+    tmp = (g_Registers[n_reg] & 0xff00);
+    g_Registers[n_reg] = (~g_Registers[n_reg] & 0xff) | tmp;
+   }
+   else
+   {
+    g_mainMemory[eff_addr] = ~g_mainMemory[eff_addr] & 0xff;
+   }
+  }
+  else
+  {
+   // com:
+
+   if(mode==0)
+   {
+    g_Registers[n_reg] = ~g_Registers[n_reg] & 0177777;
+   }
+   else
+   {
+    g_mainMemory[eff_addr] = ~g_mainMemory[eff_addr] & 0xff;
+    g_mainMemory[eff_addr+1] = ~g_mainMemory[eff_addr+1] & 0xff;
+   }
+  }
+ }
+
+ // the INC or INCB operation:
+
+ if((instr_word & 07700) == 05200)
+ {
+  // the C bit is not affected, zero the others:
+
+  g_TNZVC &= 1;
+
+  // increment dest (dest = dest + 1):
+
+  if(byte_op)
+  {
+   // incb:
+
+   if(mode==0)
+   {
+    // increment the lower byte in the register:
+
+    tmp = (g_Registers[n_reg] & 0xff);
+
+    // calc the overflow (V) bit:
+
+    if(g_Registers[n_reg]==0377) g_TNZVC |= 2;
+
+    // increment:
+
+    tmp = twosComplementAdd_B(tmp,1);
+
+    g_Registers[n_reg] &= 0xff00;
+
+    g_Registers[n_reg] |= (tmp & 0xff);
+   }
+   else
+   {
+    // calc the overflow (V) bit:
+
+    if(g_mainMemory[eff_addr]==0377) g_TNZVC |= 2;
+
+    // increment:
+
+    g_mainMemory[eff_addr] = twosComplementAdd_B(g_mainMemory[eff_addr],1);
+   }
+  }
+  else
+  {
+   // inc:
+
+   if(mode==0)
+   {
+    // calc the overflow (V) bit:
+
+    if(g_Registers[n_reg]==077777) g_TNZVC |= 2;
+
+    // increment:
+
+    g_Registers[n_reg] = twosComplementAdd(g_Registers[n_reg],1);
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    // calc the overflow (V) bit:
+
+    if(tmp == 077777) g_TNZVC |= 2;
+
+    // increment:
+
+    tmp = twosComplementAdd(tmp,1);
+
+    g_mainMemory[eff_addr] = tmp & 0xff;
+    g_mainMemory[eff_addr+1] = (tmp & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // the DEC or DECB operation:
+
+ if((instr_word & 07700) == 05300)
+ {
+  // the C bit is not affected, zero the others:
+
+  g_TNZVC &= 1;
+
+  // decrement dest (dest = dest - 1):
+
+  if(byte_op)
+  {
+   // decb:
+
+   if(mode==0)
+   {
+    // decrement the lower byte in the register:
+
+    tmp = (g_Registers[n_reg] & 0xff);
+
+    // calc the overflow (V) bit:
+
+    if(tmp == 0200) g_TNZVC |= 2;
+
+    // decrement:
+
+    tmp = twosComplementSub_B(tmp,1);
+
+    g_Registers[n_reg] &= 0xff00;
+
+    g_Registers[n_reg] |= (tmp & 0xff);
+   }
+   else
+   {
+    // calc the overflow (V) bit:
+
+    if(g_mainMemory[eff_addr] == 0200) g_TNZVC |= 2;
+
+    // decrement:
+
+    g_mainMemory[eff_addr] = twosComplementSub_B(g_mainMemory[eff_addr],1);
+   }
+  }
+  else
+  {
+   // dec:
+
+   if(mode==0)
+   {
+    // calc the overflow (V) bit:
+
+    if(g_Registers[n_reg]==0100000) g_TNZVC |= 2;
+
+    // decrement:
+
+    g_Registers[n_reg] = twosComplementSub(g_Registers[n_reg],1);
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    // calc the overflow (V) bit:
+
+    if(tmp == 0100000) g_TNZVC |= 2;
+
+    // decrement:
+
+    tmp = twosComplementSub(tmp,1);
+
+    g_mainMemory[eff_addr] = tmp & 0xff;
+    g_mainMemory[eff_addr+1] = (tmp & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // the NEG or NEGB operation:
+
+ if((instr_word & 07700) == 05400)
+ {
+  //clear all condition bits:
+
+  g_TNZVC = 0;
+
+  // negate dest (dest = -dest):
+
+  if(byte_op)
+  {
+   // negb:
+
+   if(mode==0)
+   {
+    // negate the lower byte in the register:
+
+    tmp = ~(g_Registers[n_reg] & 0xff) + 1;
+
+    g_Registers[n_reg] &= 0xff00;
+
+    g_Registers[n_reg] |= (tmp & 0xff);
+   }
+   else
+   {
+    g_mainMemory[eff_addr] = (~g_mainMemory[eff_addr] + 1) & 0xff;
+   }
+  }
+  else
+  {
+   // neg:
+
+   if(mode==0)
+   {
+    g_Registers[n_reg] = (~g_Registers[n_reg]+1) & 0xffff;
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    tmp = (~tmp+1) & 0xffff;
+
+    g_mainMemory[eff_addr] = tmp & 0xff;
+    g_mainMemory[eff_addr+1] = (tmp & 0xff00) >>> 8;
+   }
+  }
+
+  // calc the overflow (V) bit and carry (C) bits:
+
+  if(mode==0)
+  {
+   if(byte_op)
+   {
+    // test the lower byte of the register:
+
+    if((g_Registers[n_reg] & 0xff)==0x80) g_TNZVC |= 2;
+    if((g_Registers[n_reg] & 0xff)!=0) g_TNZVC |= 1;
+   }
+   else
+   {
+    if(g_Registers[n_reg]==0100000) g_TNZVC |= 2;
+    if(g_Registers[n_reg]!=0) g_TNZVC |= 1;
+   }
+  }
+  else
+  {
+   if(byte_op)
+   {
+    if(g_mainMemory[eff_addr]==0x80) g_TNZVC |= 2;
+    if(g_mainMemory[eff_addr]!=0) g_TNZVC |= 1;
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    if(tmp == 0100000) g_TNZVC |= 2;
+    if(tmp != 0) g_TNZVC |= 1;
+   }
+  }
+ }
+
+ // the ADC or ADCB operation:
+
+ if((instr_word & 07700) == 05500)
+ {
+  // save the C bit:
+
+  carry = g_TNZVC & 1;
+
+  // calc the V and C bits:
+
+  g_TNZVC = 0;
+
+  if(carry)
+  {
+   if(mode==0)
+   {
+    if(byte_op)
+    {
+     if((g_Registers[n_reg] & 0xff)==0x7f) g_TNZVC |= 2;
+
+     if((g_Registers[n_reg] & 0xff)==0xff) g_TNZVC |= 1;
+    }
+    else
+    {
+     if(g_Registers[n_reg]==077777) g_TNZVC |= 2;
+
+     if(g_Registers[n_reg]==0177777) g_TNZVC |= 1;
+    }
+   }
+   else
+   {
+    if(byte_op)
+    {
+     if(g_mainMemory[eff_addr]==0x7f) g_TNZVC |= 2;
+
+     if(g_mainMemory[eff_addr]==0xff) g_TNZVC |= 1;
+    }
+    else
+    {
+     tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+     if(tmp==077777) g_TNZVC |= 2;
+
+     if(tmp==0177777) g_TNZVC |= 1;
+    }
+   }
+  }
+
+  // add the carry (C bit) to dest (dest = dest + C):
+
+  if(byte_op)
+  {
+   // adcb:
+
+   if(mode==0)
+   {
+    // add the carry to the lower byte in the register:
+
+    tmp = (g_Registers[n_reg] & 0xff);
+
+    tmp = twosComplementAdd_B(tmp,carry);
+
+    g_Registers[n_reg] &= 0xff00;
+
+    g_Registers[n_reg] |= (tmp & 0xff);
+   }
+   else
+   {
+    g_mainMemory[eff_addr] = twosComplementAdd_B(g_mainMemory[eff_addr],carry);
+   }
+  }
+  else
+  {
+   // adc:
+
+   if(mode==0)
+   {
+    g_Registers[n_reg] = twosComplementAdd(g_Registers[n_reg],carry);
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    tmp = twosComplementAdd(tmp,carry);
+
+    g_mainMemory[eff_addr] = tmp & 0xff;
+    g_mainMemory[eff_addr+1] = (tmp & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // the SBC or SBCB operation:
+
+ if((instr_word & 07700) == 05600)
+ {
+  // save the C bit:
+
+  carry = g_TNZVC & 1;
+
+  // calc the V and C bits:
+
+  g_TNZVC = 0;
+
+  if(mode==0)
+  {
+   if(byte_op)
+   {
+    if((g_Registers[n_reg] & 0xff)==0400) g_TNZVC |= 2;
+
+    if((g_Registers[n_reg] & 0xff)==0) g_TNZVC |= carry;
+   }
+   else
+   {
+    if(g_Registers[n_reg]==0100000) g_TNZVC |= 2;
+
+    if(g_Registers[n_reg]==0) g_TNZVC |= carry;
+   }
+  }
+  else
+  {
+   if(byte_op)
+   {
+    if(g_mainMemory[eff_addr]==0400) g_TNZVC |= 2;
+
+    if(g_mainMemory[eff_addr]==0) g_TNZVC |= carry;
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    if(tmp==0100000) g_TNZVC |= 2;
+
+    if(tmp==0) g_TNZVC |= carry;
+   }
+  }
+
+  // subtract the carry (C bit) from dest (dest = dest - C):
+
+  if(byte_op)
+  {
+   // sbcb:
+
+   if(mode==0)
+   {
+    // subtract the carry from the lower byte in the register:
+
+    tmp = (g_Registers[n_reg] & 0xff);
+
+    tmp = twosComplementSub_B(tmp,carry);
+
+    g_Registers[n_reg] &= 0xff00;
+
+    g_Registers |= tmp;
+   }
+   else
+   {
+    g_mainMemory[eff_addr] = twosComplementSub_B(g_mainMemory[eff_addr],carry);
+   }
+  }
+  else
+  {
+   // sbc:
+
+   if(mode==0)
+   {
+    g_Registers[n_reg] = twosComplementSub(g_Registers[n_reg],carry);
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    tmp = twosComplementSub(tmp,carry);
+
+    g_mainMemory[eff_addr] = tmp & 0xff;
+    g_mainMemory[eff_addr+1] = (tmp & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // the TST or TSTB operation:
+
+ if((instr_word & 07700) == 05700)
+ {
+  // tstb or tst:
+
+  g_TNZVC = 0;
+
+  // the N and Z bits are calculated below:
+ }
+
+ // the ROR or RORB operation:
+
+ // ROR(C + dest):
+
+ if((instr_word & 07700) == 06000)
+ {
+  // save the C bit:
+
+  carry = g_TNZVC & 1;
+
+  // set the C bit = lsb of the dest:
+
+  if(mode==0)
+  {
+   g_TNZVC = g_Registers[n_reg] & 1;
+  }
+  else
+  {
+   g_TNZVC = g_mainMemory[eff_addr] & 1;
+  }
+
+  // do the bit rotation:
+
+  if(byte_op)
+  {
+   // rorb:
+
+   if(mode==0)
+   {
+    // rotate the lower byte of the register:
+
+    tmp = g_Registers[n_reg] & 0xff;
+
+    tmp = tmp >>> 1;
+
+    if(carry) tmp |= 0x80;
+
+    g_Registers[n_reg] &= 0xff00;
+
+    g_Registers[n_reg] |= (tmp & 0xff);
+   }
+   else
+   {
+    g_mainMemory[eff_addr] >>>= 1;
+
+    if(carry) g_mainMemory[eff_addr] |= 0x80;
+
+    g_mainMemory[eff_addr] &= 0xff;
+   }
+  }
+  else
+  {
+   // ror:
+
+   if(mode==0)
+   {
+    g_Registers[n_reg] >>>= 1;
+
+    if(carry) g_Registers[n_reg] |= 0x8000;
+
+    g_Registers[n_reg] &= 0xffff;
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    tmp >>>= 1;
+
+    if(carry) tmp |= 0x8000;
+
+    g_mainMemory[eff_addr] = tmp & 0xff;
+    g_mainMemory[eff_addr+1] = (tmp & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // the ROL or ROLB operation:
+
+ // ROL(C + dest):
+
+ if((instr_word & 07700) == 06100)
+ {
+  // save the C bit:
+
+  carry = g_TNZVC & 1;
+
+  // set the C bit = msb of the dest:
+
+  g_TNZVC = 0;
+
+  if(mode==0)
+  {
+   if(byte_op)
+   {
+    if(g_Registers[n_reg] & 0x80) g_TNZVC = 1;
+   }
+   else
+   {
+    if(g_Registers[n_reg] & 0x8000) g_TNZVC = 1;
+   }
+  }
+  else
+  {
+   if(byte_op)
+   {
+    if(g_mainMemory[eff_addr] & 0x80) g_TNZVC = 1;
+   }
+   else
+   {
+    if(g_mainMemory[eff_addr+1] & 0x80) g_TNZVC = 1;
+   }
+  }
+
+  // do the bit rotation:
+
+  if(byte_op)
+  {
+   // rolb:
+
+   if(mode==0)
+   {
+    // rotate the lower byte of the register:
+
+    tmp = g_Registers[n_reg] & 0xff;
+
+    tmp = tmp << 1;
+
+    if(carry) tmp |= 0x1;
+
+    g_Registers[n_reg] &= 0xff00;
+
+    g_Registers[n_reg] |= (tmp & 0xff);
+   }
+   else
+   {
+    g_mainMemory[eff_addr] <<= 1;
+
+    if(carry) g_mainMemory[eff_addr] |= 0x1;
+
+    g_mainMemory[eff_addr] &= 0xff;
+   }
+  }
+  else
+  {
+   // rol:
+
+   if(mode==0)
+   {
+    g_Registers[n_reg] <<= 1;
+
+    if(carry) g_Registers[n_reg] |= 0x1;
+
+    g_Registers[n_reg] &= 0xffff;
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    tmp <<= 1;
+
+    if(carry) tmp |= 0x1;
+
+    g_mainMemory[eff_addr] = tmp & 0xff;
+    g_mainMemory[eff_addr+1] = (tmp & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // the ASR or ASRB operation:
+
+ if((instr_word & 07700) == 06200)
+ {
+  // set the C bit = lsb of the dest:
+
+  if(mode==0)
+  {
+   g_TNZVC = g_Registers[n_reg] & 1;
+  }
+  else
+  {
+   g_TNZVC = g_mainMemory[eff_addr] & 1;
+  }
+
+  // do the shift (dest = dest >> 1):
+
+  // bit 15 (the sign bit) is replicated:
+
+  if(byte_op)
+  {
+   // asrb:
+
+   if(mode==0)
+   {
+    // shift the lower byte of the register:
+
+    msb = g_Registers[n_reg] & 0x80;
+
+    tmp = g_Registers[n_reg] & 0xff;
+
+    tmp = tmp >>> 1;
+
+    // replicate the msb:
+
+    if(msb) tmp |= 0x80;
+
+    g_Registers[n_reg] &= 0xff00;
+
+    g_Registers[n_reg] |= (tmp & 0xff);
+   }
+   else
+   {
+    msb = g_mainMemory[eff_addr] & 0x80;
+
+    g_mainMemory[eff_addr] >>>= 1;
+
+    // replicate the msb:
+
+    if(msb) g_mainMemory[eff_addr] |= 0x80;
+
+    g_mainMemory[eff_addr] &= 0xff;
+   }
+  }
+  else
+  {
+   // asr:
+
+   if(mode==0)
+   {
+    msb = g_Registers[n_reg] & 0x8000;
+
+    g_Registers[n_reg] >>>= 1;
+
+    // replicate the msb:
+
+    if(msb) g_Registers[n_reg] |= 0x8000;
+
+    g_Registers[n_reg] &= 0xffff;
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    msb = tmp & 0x8000;
+
+    tmp >>>= 1;
+
+    // replicate the msb:
+
+    if(msb) tmp |= 0x8000;
+
+    g_mainMemory[eff_addr] = tmp & 0xff;
+    g_mainMemory[eff_addr+1] = (tmp & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // the ASL or ASLB operation:
+
+ if((instr_word & 07700) == 06300)
+ {
+  // set the C bit = msb of the dest:
+
+  g_TNZVC = 0;
+
+  if(mode==0)
+  {
+   if(byte_op)
+   {
+    if(g_Registers[n_reg] & 0x80) g_TNZVC = 1;
+   }
+   else
+   {
+    if(g_Registers[n_reg] & 0x8000) g_TNZVC = 1;
+   }
+  }
+  else
+  {
+   if(byte_op)
+   {
+    if(g_mainMemory[eff_addr] & 0x80) g_TNZVC = 1;
+   }
+   else
+   {
+    if(g_mainMemory[eff_addr+1] & 0x80) g_TNZVC = 1;
+   }
+  }
+
+  // do the shift (dest = dest << 1):
+
+  if(byte_op)
+  {
+   // aslb:
+
+   if(mode==0)
+   {
+    // shift the lower byte of the register:
+
+    tmp = g_Registers[n_reg] & 0xff;
+
+    tmp = tmp << 1;
+
+    g_Registers[n_reg] &= 0xff00;
+
+    g_Registers[n_reg] |= (tmp & 0xff);
+   }
+   else
+   {
+    g_mainMemory[eff_addr] <<= 1;
+
+    g_mainMemory[eff_addr] &= 0xff;
+   }
+  }
+  else
+  {
+   // asl:
+
+   if(mode==0)
+   {
+    g_Registers[n_reg] <<= 1;
+
+    g_Registers[n_reg] &= 0xffff;
+   }
+   else
+   {
+    tmp = bytesToWord(g_mainMemory[eff_addr+1],g_mainMemory[eff_addr]);
+
+    tmp <<= 1;
+
+    g_mainMemory[eff_addr] = tmp & 0xff;
+    g_mainMemory[eff_addr+1] = (tmp & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // test the dest to calculate the Z and N bits:
+
+ if(byte_op)
+ {
+  if(mode==0)
+  {
+   // test the lower byte of the register:
+
+   if((g_Registers[n_reg] & 0xff)==0) g_TNZVC |= 4;
+
+   if(g_Registers[n_reg] & 0x80) g_TNZVC |= 8;
+  }
+  else
+  {
+   // test the byte at location eff_addr:
+
+   if(g_mainMemory[eff_addr] == 0) g_TNZVC |= 4;
+
+   if(g_mainMemory[eff_addr] & 0x80) g_TNZVC |= 8;
+  }
+ }
+ else
+ {
+  if(mode==0)
+  {
+   // test the register:
+
+   if(g_Registers[n_reg]==0) g_TNZVC |= 4;
+
+   if(g_Registers[n_reg] & 0x8000) g_TNZVC |= 8;
+  }
+  else
+  {
+   // test the word at location eff_addr:
+
+   if((g_mainMemory[eff_addr] + g_mainMemory[eff_addr+1]) == 0)
+   {
+    g_TNZVC |= 4;
+   }
+
+   if(g_mainMemory[eff_addr+1] & 0x80) g_TNZVC |= 8;
+  }
+ }
+
+ // calc the V and C bits for the ASR, ASL, ROR, ROL operations:
+
+ if((instr_word & 07700) >= 06000 && (instr_word & 07700) <= 06300)
+ {
+  var n_bit = (g_TNZVC & 8) >>> 3;
+
+  var c_bit = g_TNZVC & 1;
+
+  g_TNZVC |= (n_bit ^ c_bit) << 1;
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function executeJump(instr_word)
+{
+ // JMP:
+
+ var mode = (instr_word & 070) >>> 3;
+
+ // transfer program control to the location in
+ // memory pointed to by dest: 
+
+ // therefore, cannot user register mode:
+
+ if(mode==0)
+ {
+  // error - set the Trap bit:
+
+  g_TNZVC |= 16;
+
+  g_LastTrapMessage = "Cannot use register mode with the JMP instruction.";
+
+  return;
+ }
+
+ var dest = instr_word & 077;
+
+ // save the destination address to the PC:
+
+ g_Registers[7] = calcEffectiveAddress(dest,0);
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function executeDoubleOpInstr(instr_word)
+{
+ var src_mode=(instr_word & 07000) >>> 9;
+ var dest_mode=(instr_word & 070) >>> 3;
+
+ var src_reg=(instr_word & 0700) >>> 6;
+ var dest_reg=instr_word & 07;
+
+ var src_eff_addr=0;
+ var dest_eff_addr=0;
+
+ var byte_op=0;
+
+ // Is the instruction a byte operation?
+
+ if(instr_word & 0100000) byte_op=1;
+
+ // calc the source and destination effective addresses:
+
+ if(src_mode>0)
+ {
+  src_eff_addr = calcEffectiveAddress((instr_word & 07700) >>> 6,byte_op);
+ }
+
+ if(checkTrapBit()) return;
+
+ if(dest_mode>0)
+ {
+  dest_eff_addr = calcEffectiveAddress(instr_word & 077,byte_op);
+ }
+
+ if(checkTrapBit()) return;
+
+ var src_data=0;
+ var dest_data=0;
+
+ var result=0;
+
+ // read the data at src_eff_addr:
+
+ if(byte_op && ((instr_word & 070000) != 060000))
+ {
+  if(src_mode==0)
+  {
+   src_data = g_Registers[src_reg] & 0xff;
+  }
+  else
+  {
+   src_data = g_mainMemory[src_eff_addr];
+  }
+ }
+ else
+ {
+  if(src_mode==0)
+  {
+   src_data = g_Registers[src_reg];
+  }
+  else
+  {
+   src_data = bytesToWord(g_mainMemory[src_eff_addr+1],g_mainMemory[src_eff_addr]);
+  }
+ }
+
+ // read the data at dest_eff_addr:
+
+ if(byte_op && ((instr_word & 070000) != 060000))
+ {
+  if(dest_mode==0)
+  {
+   dest_data = g_Registers[dest_reg] & 0xff;
+  }
+  else
+  {
+   dest_data = g_mainMemory[dest_eff_addr];
+  }
+ }
+ else
+ {
+  if(dest_mode==0)
+  {
+   dest_data = g_Registers[dest_reg];
+  }
+  else
+  {
+   dest_data = bytesToWord(g_mainMemory[dest_eff_addr+1],g_mainMemory[dest_eff_addr]);
+  }
+ }
+
+ // the MOV and MOVB operations:
+
+ if((instr_word & 070000) == 010000)
+ {
+  // set the condition codes:
+
+  g_TNZVC &= 1;
+
+  if(src_data == 0) g_TNZVC |= 4;
+
+  if(byte_op)
+  {
+   if(src_data & 0x80) g_TNZVC |= 8;
+  }
+  else
+  {
+   if(src_data & 0x8000) g_TNZVC |= 8;
+  }
+
+  // do the operation:
+
+  if(byte_op)
+  {
+   // movb:
+
+   if(dest_mode==0)
+   {
+    g_Registers[dest_reg] = src_data & 0xff;
+
+    // extend the msb of the lower byte (unique to movb):
+
+    if(src_data & 0x80)
+    {
+     g_Registers[dest_reg] |= 0xff00;
+    }
+   }
+   else
+   {
+    g_mainMemory[dest_eff_addr] = src_data & 0xff;
+   }
+  }
+  else
+  {
+   // mov:
+
+   if(dest_mode==0)
+   {
+    g_Registers[dest_reg] = src_data & 0xffff;
+   }
+   else
+   {
+    g_mainMemory[dest_eff_addr] = src_data & 0xff;
+    g_mainMemory[dest_eff_addr+1] = (src_data & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // the CMP and CMPB operations:
+
+ if((instr_word & 070000) == 020000)
+ {
+  g_TNZVC=1;
+
+  // compare src and dest:
+
+  if(byte_op)
+  {
+   // cmpb:
+
+   result = ~dest_data & 0377;
+
+   result += 1;
+
+   result += (src_data & 0377); 
+
+   // use result to calc the condition code bits: 
+
+   // was there a carry from the msb?
+
+   if(result & 0x100) g_TNZVC=0;
+
+   if((result & 0x80) == (dest_data & 0x80))
+   {
+    if((src_data & 0x80) != (dest_data & 0x80))
+    {
+     g_TNZVC |= 2;
+    }
+   }
+
+   result &= 0xff;
+
+   if(result == 0) g_TNZVC |= 4;
+   if(result & 0x80) g_TNZVC |= 8;
+  }
+  else
+  {
+   // cmp:
+
+   result = ~dest_data & 0177777;
+
+   result += 1;
+
+   result += src_data; 
+
+   // use result to calc the condition code bits: 
+
+   // was there a carry from the msb?
+
+   if(result & 0x10000) g_TNZVC=0;
+
+   if((result & 0x8000) == (dest_data & 0x8000))
+   {
+    if((src_data & 0x8000) != (dest_data & 0x8000))
+    {
+     g_TNZVC |= 2;
+    }
+   }
+
+   result &= 0xffff;
+
+   if(result == 0) g_TNZVC |= 4;
+   if(result & 0x8000) g_TNZVC |= 8;
+  }
+ }
+
+ // the BIT and BITB operations:
+
+ if((instr_word & 070000) == 030000)
+ {
+  g_TNZVC &= 1;
+
+  // AND the src and dest:
+
+  result = src_data & dest_data;
+
+  // set the condition code bits:
+
+  if(byte_op)
+  {
+   // bitb:
+
+   if(result & 0x80) g_TNZVC |= 8;
+
+   if((result & 0xff)==0) g_TNZVC |= 4;
+  }
+  else
+  {
+   // bit:
+
+   if(result & 0x8000) g_TNZVC |= 8;
+
+   if((result & 0xffff)==0) g_TNZVC |= 4;
+  }
+ }
+
+ // the BIC and BICB operations:
+
+ if((instr_word & 070000) == 040000)
+ {
+  g_TNZVC &= 1;
+
+  // where a bit is set in src, clear that bit in dest:
+
+  result = ~src_data & dest_data;
+
+  // set the condition code bits:
+
+  if(byte_op)
+  {
+   // bicb:
+
+   if(result & 0x80) g_TNZVC |= 8;
+
+   if((result & 0xff)==0) g_TNZVC |= 4;
+  }
+  else
+  {
+   // bic:
+
+   if(result & 0x8000) g_TNZVC |= 8;
+
+   if((result & 0xffff)==0) g_TNZVC |= 4;
+  }
+
+  // save the result to dest:
+
+  if(byte_op)
+  {
+   // bicb:
+
+   if(dest_mode==0)
+   {
+    g_Registers[dest_reg] &= 0xff00;
+
+    g_Registers[dest_reg] |= result & 0xff;
+   }
+   else
+   {
+    g_mainMemory[dest_eff_addr] = result & 0xff;
+   }
+  }
+  else
+  {
+   // bic:
+
+   if(dest_mode==0)
+   {
+    g_Registers[dest_reg] = result & 0xffff;
+   }
+   else
+   {
+    g_mainMemory[dest_eff_addr] = result & 0xff;
+    g_mainMemory[dest_eff_addr+1] = (result & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // the BIS and BISB operations:
+
+ if((instr_word & 070000) == 050000)
+ {
+  g_TNZVC &= 1;
+
+  // OR the src and dest:
+
+  result = src_data | dest_data;
+
+  // set the condition code bits:
+
+  if(byte_op)
+  {
+   // bisb:
+
+   if(result & 0x80) g_TNZVC |= 8;
+
+   if((result & 0xff)==0) g_TNZVC |= 4;
+  }
+  else
+  {
+   // bis:
+
+   if(result & 0x8000) g_TNZVC |= 8;
+
+   if((result & 0xffff)==0) g_TNZVC |= 4;
+  }
+
+  // save the result to dest:
+
+  if(byte_op)
+  {
+   // bisb:
+
+   if(dest_mode==0)
+   {
+    g_Registers[dest_reg] &= 0xff00;
+
+    g_Registers[dest_reg] |= result & 0xff;
+   }
+   else
+   {
+    g_mainMemory[dest_eff_addr] = result & 0xff;
+   }
+  }
+  else
+  {
+   // bis:
+
+   if(dest_mode==0)
+   {
+    g_Registers[dest_reg] = result & 0xffff;
+   }
+   else
+   {
+    g_mainMemory[dest_eff_addr] = result & 0xff;
+    g_mainMemory[dest_eff_addr+1] = (result & 0xff00) >>> 8;
+   }
+  }
+ }
+
+ // the SUB and ADD operations:
+
+ if((instr_word & 070000) == 060000)
+ {
+  // 0100000 bit is set = SUB:
+
+  // 0100000 bit is clear = ADD:
+
+  if(byte_op)
+  {
+   // SUB:
+
+   result = ~src_data & 0xffff;
+
+   result += 1;
+  }
+  else
+  {
+   // ADD:
+
+   result = src_data & 0xffff;
+  }
+
+  result += (dest_data & 0xffff);
+
+  // set the condition code bits:
+
+  if(byte_op)
+  {
+   g_TNZVC=1;
+
+   // the C bit:
+
+   if(result & 0x10000) g_TNZVC=0;
+
+   if((src_data & 0xffff) == 0)  g_TNZVC=0;
+
+   // the V bit:
+
+   if((src_data & 0x8000) != (dest_data & 0x8000))
+   {
+    if((src_data & 0x8000) == (result & 0x8000))
+    {
+     g_TNZVC |= 2;
+    }
+   }
+  }
+  else
+  {
+   g_TNZVC=0;
+
+   // the C bit:
+
+   if(result & 0x10000) g_TNZVC=1;
+
+   // the V bit:
+
+   if((src_data & 0x8000) == (dest_data & 0x8000))
+   {
+    if((src_data & 0x8000) != (result & 0x8000))
+    {
+     g_TNZVC |= 2;
+    }
+   }
+  } 
+
+  // the Z bit:
+
+  if(result==0) g_TNZVC |= 4;
+
+  // the N bit:
+
+  if(result & 0x8000) g_TNZVC |= 8;
+
+  // save the result to dest:
+
+  if(dest_mode==0)
+  {
+   g_Registers[dest_reg] = result & 0xffff;
+  }
+  else
+  {
+   g_mainMemory[dest_eff_addr] = result & 0xff;
+   g_mainMemory[dest_eff_addr+1] = (result & 0xff00) >>> 8;
+  }
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function executeBranchInstr(instr_word)
+{
+ // the branch operations:
+
+ var bDoBranch=false;
+
+ var c_bit = g_TNZVC & 0x1;
+
+ var v_bit = (g_TNZVC & 0x2) >>> 1;
+
+ var z_bit = (g_TNZVC & 0x4) >>> 2;
+
+ var n_bit = (g_TNZVC & 0x8) >>> 3;
+
+ if((instr_word & 0107400) == 0400)
+ {
+  // br:
+
+  // unconditional branch:
+
+  bDoBranch=true;
+ }
+
+ if((instr_word & 0107400) == 01000)
+ {
+  // bne:
+
+  // test the Z bit, branch if 0:
+
+  if(z_bit==0)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 01400)
+ {
+  // beq:
+
+  // test the Z bit, branch if 1:
+
+  if(z_bit)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 0100000)
+ {
+  // bpl:
+
+  // test the N bit, branch if 0:
+
+  if(n_bit==0)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 0100400)
+ {
+  // bmi:
+
+  // test the N bit, branch if 1:
+
+  if(n_bit)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 0102000)
+ {
+  // bvc:
+
+  // test the V bit, branch if 0:
+
+  if(v_bit==0)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 0102400)
+ {
+  // bvs:
+
+  // test the V bit, branch if 1:
+
+  if(v_bit)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 0103000)
+ {
+  // bcc:
+
+  // test the C bit, branch if 0:
+
+  if(c_bit==0)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 0103400)
+ {
+  // bcs:
+
+  // test the C bit, branch if 1:
+
+  if(c_bit)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 02000)
+ {
+  // bge:
+
+  // N xor V = 0:
+
+  if((n_bit ^ v_bit)==0)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 02400)
+ {
+  // blt:
+
+  // N xor V = 1:
+
+  if(n_bit ^ v_bit)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 03000)
+ {
+  // bgt:
+
+  // Z or (N xor V) = 0:
+
+  if((z_bit | (n_bit ^ v_bit))==0)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 03400)
+ {
+  // ble:
+
+  // Z or (N xor V) = 1:
+
+  if(z_bit | (n_bit ^ v_bit))
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 0101000)
+ {
+  // bhi:
+
+  // C = 0 and Z = 0:
+
+  if(c_bit==0 && z_bit==0)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 0101400)
+ {
+  // blos:
+
+  // C or Z = 1:
+
+  if((c_bit | z_bit)==1)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 0103000)
+ {
+  // bhis (same as bcc):
+
+  // C = 0:
+
+  if(c_bit==0)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if((instr_word & 0107400) == 0103400)
+ {
+  // blo (same as bcs):
+
+  // C = 1:
+
+  if(c_bit)
+  {
+   bDoBranch=true;
+  }
+ }
+
+ if(bDoBranch)
+ {
+  var offset = instr_word & 0xff;
+
+  if(offset & 0x80)
+  {
+   offset = (~offset + 1) & 0xff;
+
+   g_Registers[7] -= 2*offset;
+
+   if(g_Registers[7] < 0)
+   {
+    // error - set the Trap bit:
+
+    g_TNZVC |= 16;
+
+    g_LastTrapMessage = "The branch operation has set the PC to an invalid location.";
+
+    return;
+   }
+  }
+  else
+  {
+   g_Registers[7] += 2*offset;
+
+   if(g_Registers[7] >= 0200000)
+   {
+    // error - set the Trap bit:
+
+    g_TNZVC |= 16;
+
+    g_LastTrapMessage = "The branch operation has set the PC to an invalid location.";
+
+    return;
+   }
+  }
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function executeRegisterOpInstr(instr_word)
+{
+ // instr_word has the format - xxxxRDD or xxxxRSS:
+
+ // ASH: xxxxRSS - ASH S R
+ // XOR: xxxxRDD - XOR R D
+ // JSR: xxxxRDD - JSR R D
+
+ // dest refers to either the SS or DD bits:
+
+ var dest = instr_word & 077;
+
+ var mode = (instr_word & 070) >>> 3;
+
+ var dest_eff_addr=0;
+
+ var dest_reg=0;
+
+ var result=0;
+
+ var test=0;
+
+ var tmp=0;
+
+ // get the register number or effective address for dest:
+
+ if(mode==0)
+ {
+  dest_reg = dest & 07;
+
+  dest_data = g_Registers[dest_reg];
+ }
+ else
+ {
+  dest_eff_addr = calcEffectiveAddress(dest,0);
+
+  dest_data = bytesToWord(g_mainMemory[dest_eff_addr+1],g_mainMemory[dest_eff_addr]);
+ }
+
+ if(checkTrapBit()) return;
+
+ // get the register number for R:
+
+ var n_Reg = (instr_word & 0700) >>> 6;
+
+ // the JSR operation:
+
+ if((instr_word & 0177000)==04000)
+ {
+  // transfer program control to the location in
+  // memory pointed to by dest: 
+
+  // therefore, cannot user register mode:
+
+  if(mode==0)
+  {
+   // error - set the Trap bit:
+
+   g_TNZVC |= 16;
+
+   g_LastTrapMessage = "Cannot use register mode with the JMP instruction.";
+
+   return;
+  }
+
+  pushStack(g_Registers[n_Reg]);
+
+  g_Registers[n_Reg] = g_Registers[7];
+
+  g_Registers[7] = dest_eff_addr;
+ }
+
+ // the XOR operation:
+
+ if((instr_word & 0177000)==074000)
+ {
+  result = dest_data ^ g_Registers[n_Reg];
+
+  result &= 0177777;
+
+  g_TNZVC &= 1;
+
+  if(result==0) g_TNZVC |= 4;
+
+  if(result & 0x8000) g_TNZVC |= 8;
+
+  if(mode==0)
+  {
+   g_Registers[dest_reg] = result & 0xffff;
+  }
+  else
+  {
+   g_mainMemory[dest_eff_addr] = result & 0xff;
+   g_mainMemory[dest_eff_addr+1] = (result & 0xff00) >>> 8;
+  }
+ }
+
+ var shift=0;
+
+ var carry=0;
+
+ var msb=0;
+
+ var sign_change=0;
+
+ // the ASH operation:
+
+ if((instr_word & 0177000)==072000)
+ {
+  if(dest_data & 040)
+  {
+   // negative = right shift:
+
+   shift = dest_data & 077;
+
+   shift = (~shift+1) & 077;
+
+   // need a 32 bit value for sign bit replication to work:
+
+   tmp = g_Registers[n_Reg] << 16;
+
+   tmp &= 0xffffffff;
+
+   // shift by (shift-1) so the carry bit can be captured:
+
+   // use >> instead of >>> to replicate the sign bit:
+
+   if(shift > 1) tmp = (tmp >> (shift-1));
+
+   // capture the carry bit (last bit out):
+
+   carry = tmp & 0x10000;
+
+   // complete the shift:
+
+   tmp = (tmp >> 1);
+
+   // get the upper 16 bits of the result:
+
+   g_Registers[n_Reg] = (tmp >>> 16) & 0xffff;
+  }
+  else
+  {
+   // positive = left shift:
+
+   shift = dest_data & 077;
+
+   if(shift==0)
+   {
+    // do nothing:
+
+    carry=0;
+
+    sign_change=0;
+   }
+   else
+   {
+    // save the msb:
+
+    msb = g_Registers[n_Reg] & 0x8000;
+
+    // shift by (shift-1) so that the carry bit can be captured:
+
+    if(shift > 1) g_Registers[n_Reg] = g_Registers[n_Reg] << (shift-1);
+
+    // capture the carry bit (last bit out):
+
+    if(g_Registers[n_Reg] & 0x8000) carry=1;
+
+    // complete the shift:
+
+    g_Registers[n_Reg] = (g_Registers[n_Reg] << 1) & 0177777;
+
+    if(msb != (g_Registers[n_Reg] & 0x8000)) sign_change=1;
+   }
+  }
+
+  g_TNZVC = carry;
+
+  if(sign_change) g_TNZVC |= 2;
+
+  if(g_Registers[n_Reg]==0) g_TNZVC |= 4;
+
+  if(g_Registers[n_Reg] & 0x8000) g_TNZVC |= 8;
+ }
+
+ // the ASHC operation:
+
+ if((instr_word & 0177000)==073000)
+ {
+  if(n_Reg%2==0)
+  {
+   // n_Reg is even:
+
+   tmp = g_Registers[n_Reg] << 16;
+
+   tmp |= g_Registers[n_Reg+1];
+
+   tmp &= 0xffffffff;
+  }
+  else
+  {
+   // n_Reg is odd:
+
+   tmp = g_Registers[n_Reg] << 16;
+
+   tmp |= g_Registers[n_Reg];
+
+   tmp &= 0xffffffff;
+  }
+
+  if(dest_data & 040)
+  {
+   // negative = right shift:
+
+   shift = dest_data & 077;
+
+   shift = (~shift + 1) & 077;
+
+   // shift by (shift-1) so the carry bit can be captured:
+
+   // use >> instead of >>> to replicate the sign bit:
+
+   if(shift > 1) tmp = tmp >> (shift-1);
+
+   // capture the carry bit (last bit out):
+
+   carry = tmp & 1;
+
+   // complete the shift:
+
+   tmp = (tmp >> 1) & 0xffffffff;
+  }
+  else
+  {
+   // positive = left shift:
+
+   shift = dest_data & 077;
+
+   if(shift==0)
+   {
+    // do nothing:
+
+    carry=0;
+
+    sign_change=0;
+   }
+   else
+   {
+    // save the msb:
+
+    msb=(tmp & 0x80000000);
+
+    // shift by (shift-1) so the carry bit can be captured:
+
+    if(shift > 1) tmp = tmp << (shift-1);
+
+    // capture the carry bit (last bit out):
+
+    if(tmp & 0x80000000) carry=1;
+
+    // complete the shift:
+
+    tmp = (tmp << 1) & 0xffffffff;
+
+    if((tmp & 0x80000000) != msb) sign_change=1;
+   }
+  }
+
+  g_TNZVC = carry;
+
+  if(sign_change) g_TNZVC |= 2;
+
+  if(n_Reg%2==0)
+  {
+   // n_Reg is even:
+
+   g_Registers[n_Reg] = (tmp >>> 16) & 0xffff;
+
+   g_Registers[n_Reg+1] = tmp & 0xffff;
+
+   if(tmp==0) g_TNZVC |= 4;
+
+   if(tmp & 0x80000000) g_TNZVC |= 8;
+  }
+  else
+  {
+   // n_Reg is odd:
+
+   if(dest_data & 040)
+   {
+    // negative = right shift:
+
+    // save the lower word from tmp:
+
+    g_Registers[n_Reg] = tmp & 0xffff;
+   }
+   else
+   {
+    // positive = left shift:
+
+    // save the upper word from tmp:
+
+    g_Registers[n_Reg] = (tmp >>> 16) & 0xffff;
+   }
+
+   if(g_Registers[n_Reg]==0) g_TNZVC |= 4;
+
+   if(g_Registers[n_Reg] & 0x8000) g_TNZVC |= 8;
+  }
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function executeMiscInstr(instr_word)
+{
+ // execute miscellaneous instructions:
+
+ var n_Reg=0;
+
+ // the RTS operation:
+
+ if((instr_word & 0177700)==0200)
+ {
+  n_Reg = instr_word & 07;
+
+  g_Registers[7] = g_Registers[n_Reg];
+
+  g_Registers[n_Reg] = popStack();
+ }
+
+ // the SOB operation:
+
+ if((instr_word & 0177000)==077000)
+ {
+  n_Reg = (instr_word & 0700) >>> 6;
+
+  var offset = instr_word & 077;
+
+  g_Registers[n_Reg] = g_Registers[n_Reg] - 1;
+
+  if(g_Registers[n_Reg] > 0)
+  {
+   g_Registers[7] = g_Registers[7] - (2*offset);
+  }
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+function execute_CC_Instr(instr_word)
+{
+ // set or clear the condition codes:
+
+ if(instr_word==0240) return; // nop
+
+ if((instr_word & 0241) == 0241)
+ {
+  g_TNZVC &= parseInt("11110",2); // clc
+ }
+
+ if((instr_word & 0242) == 0242)
+ {
+  g_TNZVC &= parseInt("11101",2); // clv
+ }
+
+ if((instr_word & 0244) == 0244)
+ {
+  g_TNZVC &= parseInt("11011",2); // clz
+ }
+
+ if((instr_word & 0250) == 0250)
+ {
+  g_TNZVC &= parseInt("10111",2); // cln
+ }
+
+ if((instr_word & 0261) == 0261)
+ {
+  g_TNZVC |= 1; // sec
+ }
+
+ if((instr_word & 0262) == 0262)
+ {
+  g_TNZVC |= 2; // sev
+ }
+
+ if((instr_word & 0264) == 0264)
+ {
+  g_TNZVC |= 4; // sez
+ }
+
+ if((instr_word & 0270) == 0270)
+ {
+  g_TNZVC |= 8; // sen
+ }
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+
+</script>
+
+</html>
