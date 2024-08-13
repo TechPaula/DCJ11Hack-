@@ -25,19 +25,20 @@ The default baud rate is 115200 and uses 8bits, 1 stop and no  parity.
 
 ## Memory Map
 My memory map is as follows and was updated on 07/04/2024;
-HEX
-0x0000 - 0x7FFE = RAM  (32K)
-0x6000 - 0x7FFE = Text Display (shadowed in RAM as it's WRITE only)
-0x8000 - 0xBFFE = ROM  (16K)
-0xC000 - 0xDFFE = Matrix display
-0xE000 - 0xFFFE = Future
 
-OCTAL (has to end on a multiple of 2)
-000 000 - 077 776 - RAM
-060 000 - 060 020 - Text Display (repeated multiple times)
-100 000 - 137 776 - ROM
-140 000 - 157 776 - Matrix Display
-160 000 - 177 776 - Future
+#HEX
+* 0x0000 - 0x7FFE = RAM  (32K)
+* 0x6000 - 0x7FFE = Text Display (shadowed in RAM as it's WRITE only)
+* 0x8000 - 0xBFFE = ROM  (16K)
+* 0xC000 - 0xDFFE = Matrix display
+* 0xE000 - 0xFFFE = Future
+
+#OCTAL (has to end on a multiple of 2)
+* 000 000 - 077 776 - RAM
+* 060 000 - 060 020 - Text Display (repeated multiple times)
+* 100 000 - 137 776 - ROM
+* 140 000 - 157 776 - Matrix Display
+* 160 000 - 177 776 - Future
 
 
 ## Code examples
