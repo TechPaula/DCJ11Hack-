@@ -1,0 +1,31 @@
+%SIGNAL
+PIN  18 =  COUNT_EN 
+PIN   1 =  LA13 
+PIN   2 =  LA14 
+PIN   3 =  LA15 
+PIN   4 =  LA16 
+PIN   5 =  LA17 
+PIN   6 =  LA18 
+PIN   7 =  LA19 
+PIN   8 =  LA20 
+PIN   9 =  LA21 
+PIN  19 =  MATRIX_EN 
+PIN  16 =  MATRIX_LED 
+PIN  12 =  nBUFCTL 
+PIN  13 =  nLBS_MEM 
+%END
+
+%FIELD
+%END
+
+%EQUATION
+COUNT_EN =>
+    !LA13 & LA14 & LA15 & !nLBS_MEM
+
+!MATRIX_EN =>
+    !LA13 & LA14 & LA15 & !nLBS_MEM
+
+!MATRIX_LED =>
+    !LA13 & LA14 & LA15 & !nLBS_MEM
+
+%END

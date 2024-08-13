@@ -1,0 +1,26 @@
+# Berkeley PLA format generated using
+#
+# CUPL(WM)        5.0a Serial# 60008009
+# Device          g16v8s  Library DLIB-h-40-9
+# Created         Tue Aug 13 11:12:18 2024
+# Name            Disp16x16Decode
+# Partno          
+# Revision        0.1
+# Date            28/12/2023
+# Designer        PM
+# Company         
+# Assembly        
+# Location        
+#
+# Inputs  COUNT_EN LA13 LA14 LA15 
+#         LA16 LA17 LA18 LA19 
+#         LA20 LA21 MATRIX_EN MATRIX_LED 
+#         nBUFCTL nLBS_MEM 
+# Outputs COUNT_EN !MATRIX_EN !MATRIX_LED 
+.i 14
+.o 3
+.p 3
+-011---------0 1~~
+-011---------0 ~1~
+-011---------0 ~~1
+.end

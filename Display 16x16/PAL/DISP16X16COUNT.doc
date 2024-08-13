@@ -1,0 +1,95 @@
+
+*******************************************************************************
+                                Disp16x16Count
+*******************************************************************************
+
+CUPL(WM)        5.0a Serial# 60008009
+Device          g16v8ms  Library DLIB-h-40-11
+Created         Tue Aug 13 11:06:58 2024
+Name            Disp16x16Count
+Partno          
+Revision        0.1
+Date            28/12/2023
+Designer        PM
+Company         
+Assembly        
+Location        
+
+===============================================================================
+                            Expanded Product Terms
+===============================================================================
+
+Q0.d  =>
+    !Q0
+
+Q1.d  =>
+    !Q0 & Q1
+  # Q0 & !Q1
+
+Q2.d  =>
+    !Q0 & Q2
+  # !Q1 & Q2
+  # Q0 & Q1 & !Q2
+
+Q3.d  =>
+    !Q0 & Q3
+  # !Q1 & Q3
+  # !Q2 & Q3
+  # Q0 & Q1 & Q2 & !Q3
+
+Q4.d  =>
+    !Q0 & Q4
+  # !Q1 & Q4
+  # !Q2 & Q4
+  # !Q3 & Q4
+  # Q0 & Q1 & Q2 & Q3 & !Q4
+
+Q5.d  =>
+    !Q0 & Q5
+  # !Q1 & Q5
+  # !Q2 & Q5
+  # !Q3 & Q5
+  # !Q4 & Q5
+  # Q0 & Q1 & Q2 & Q3 & Q4 & !Q5
+
+Q6.d  =>
+    !Q0 & Q6
+  # !Q1 & Q6
+  # !Q2 & Q6
+  # !Q3 & Q6
+  # !Q4 & Q6
+  # !Q5 & Q6
+  # Q0 & Q1 & Q2 & Q3 & Q4 & Q5 & !Q6
+
+
+===============================================================================
+                                 Symbol Table
+===============================================================================
+
+Pin Variable                                    Pterms   Max     Min    
+Pol   Name              Ext     Pin     Type     Used   Pterms  Level   
+--- --------            ---     ---     ----    ------  ------  -----   
+
+    CLK                         1        V        -       -       -     
+ !  OE                          11       V        -       -       -     
+    Q0                          19       V        -       -       -     
+    Q0                  d       19       X        1       8       1     
+    Q1                          18       V        -       -       -     
+    Q1                  d       18       X        2       8       1     
+    Q2                          17       V        -       -       -     
+    Q2                  d       17       X        3       8       1     
+    Q3                          16       V        -       -       -     
+    Q3                  d       16       X        4       8       1     
+    Q4                          15       V        -       -       -     
+    Q4                  d       15       X        5       8       1     
+    Q5                          14       V        -       -       -     
+    Q5                  d       14       X        6       8       1     
+    Q6                          13       V        -       -       -     
+    Q6                  d       13       X        7       8       1     
+
+
+LEGEND    D : default variable         F : field      G : group
+          I : intermediate variable    N : node       M : extended node
+          U : undefined                V : variable   X : extended variable
+          T : function
+

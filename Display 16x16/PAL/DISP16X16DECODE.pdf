@@ -1,0 +1,169 @@
+{COMPONENT D:\REPOSITORIES\DCJ11HACK-\DISPLAY 16X16\PAL\DISP16X16DECODE.SYM
+
+ {ENVIRONMENT
+  {PDIFvrev 3.00}
+  {Program "CUPL(WM) Version 5.0a"}
+  {DBtype "Schematic"}
+  {DBvrev 1.01}
+  {DBtime "Tue Aug 13 11:12:18 2024 "}
+  {DBunit "MIL"}
+  {DBgrid 10}
+  {Lyrstr "WIRES" 1 "BUS" 1 "GATE" 2 "IEEE" 2 "PINFUN" 3 "PINNUM" 1 
+          "PINNAM" 6 "PINCON" 4 "REFDES" 2 "ATTR" 6 "SDOT" 1 
+          "DEVICE" 5 "OUTLIN" 5 "ATTR2" 6 "NOTES" 6 "NETNAM" 4 
+          "CMPNAM" 5 "BORDER" 5}
+ }
+
+ {USER
+  {VIEW
+   {Mode SYMB}
+   {Nlst OPEN}
+   {Vw 0 0 2}
+   {Lv 12 2 2 2 0 0 2 2 2 2 0 0 2 1 2 0 0 0 0}
+   {Gs 10 10}
+  }
+ }
+
+ {DISPLAY
+  [Ly "PINNUM"]
+  [Ls "SOLID"][Wd 0]
+  [Ts 15][Tj "LC"][Tr 0][Tm "N"]
+ }
+
+ {SYMBOL
+  {PIN_DEF
+   [Ly "PINCON"]
+   {P LA13 {Pt "INPUT"}{Lq 0}{Ploc 100 260}}
+   {P LA14 {Pt "INPUT"}{Lq 0}{Ploc 100 240}}
+   {P LA15 {Pt "INPUT"}{Lq 0}{Ploc 100 220}}
+   {P LA16 {Pt "INPUT"}{Lq 0}{Ploc 100 200}}
+   {P LA17 {Pt "INPUT"}{Lq 0}{Ploc 100 180}}
+   {P LA18 {Pt "INPUT"}{Lq 0}{Ploc 100 160}}
+   {P LA19 {Pt "INPUT"}{Lq 0}{Ploc 100 140}}
+   {P LA20 {Pt "INPUT"}{Lq 0}{Ploc 100 120}}
+   {P LA21 {Pt "INPUT"}{Lq 0}{Ploc 100 100}}
+   {P NBUFCTL {Pt "INPUT"}{Lq 0}{Ploc 100 80}}
+   {P NLBS_MEM {Pt "INPUT"}{Lq 0}{Ploc 100 60}}
+   {P COUNT_EN {Pt "INPUT"}{Lq 0}{Ploc 100 40}}
+   {P MATRIX_E {Pt "INPUT"}{Lq 0}{Ploc 100 20}}
+   {P MATRIX_L {Pt "I/O"}{Lq 0}{Ploc 360 20}}
+  }
+
+  {PKG
+   [Ly "REFDES"]
+   [Ts 25][Tj "CB"][Tr 0][Tm "N"]
+   {Rdl 230 290}
+
+   [Ly "PINNUM"]
+   [Ts 15][Tj "RC"]
+   {Pnl 120 270}
+   {Pnl 120 250}
+   {Pnl 120 230}
+   {Pnl 120 210}
+   {Pnl 120 190}
+   {Pnl 120 170}
+   {Pnl 120 150}
+   {Pnl 120 130}
+   {Pnl 120 110}
+   {Pnl 120 90}
+   {Pnl 120 70}
+   {Pnl 120 50}
+   {Pnl 120 30}
+   [Ts 15][Tj "LC"]
+   {Pnl 340 30}
+
+   {Sd A 1 2 3 4 5 6 7 8 9 12 13 18 19 16}
+  }
+
+  {PIC
+   [Ly "GATE"]
+   [Ts 15][Tj "LC"][Tr 0][Tm "N"]
+   {R 130 280 330 0}
+   {L 130 260 100 260}
+   {L 130 240 100 240}
+   {L 130 220 100 220}
+   {L 130 200 100 200}
+   {L 130 180 100 180}
+   {L 130 160 100 160}
+   {L 130 140 100 140}
+   {L 130 120 100 120}
+   {L 130 100 100 100}
+   {L 130 80 100 80}
+   {L 130 60 100 60}
+   {L 130 40 100 40}
+   {L 130 20 100 20}
+   {L 330 20 360 20}
+   [Ly "PINNAM"]
+   [Tj "LC"]
+   {T "LA13" 140 260}
+   {T "LA14" 140 240}
+   {T "LA15" 140 220}
+   {T "LA16" 140 200}
+   {T "LA17" 140 180}
+   {T "LA18" 140 160}
+   {T "LA19" 140 140}
+   {T "LA20" 140 120}
+   {T "LA21" 140 100}
+   {T "NBUFCTL" 140 80}
+   {T "NLBS_MEM" 140 60}
+   {T "COUNT_EN" 140 40}
+   {T "MATRIX_E" 140 20}
+   [Tj "RC"]
+   {T "MATRIX_L" 320 20}
+   [Ly "DEVICE"]
+   [Tj "CT"]
+   {T "G16V8S" 230 -10}
+  }
+
+  {ATR
+   {IN
+    {Org 100 20}
+    {Ty 255}
+   }
+   {EX
+    [Ly "ATTR2"]
+    [Ts 12][Tj "CT"][Tr 0][Tm "N"]
+    {At PLD D:\REPOSITORIES\DCJ11HACK-\DISPLAY 16X16\PAL\DISP16X16DECODE 230 280}
+   }
+  }
+ }
+
+ {DETAIL
+  {ANNOTATE
+  }
+
+  {NET_DEF
+   {N LA13
+   }
+   {N LA14
+   }
+   {N LA15
+   }
+   {N LA16
+   }
+   {N LA17
+   }
+   {N LA18
+   }
+   {N LA19
+   }
+   {N LA20
+   }
+   {N LA21
+   }
+   {N NBUFCTL
+   }
+   {N NLBS_MEM
+   }
+   {N COUNT_EN
+   }
+   {N MATRIX_E
+   }
+   {N MATRIX_L
+   }
+  }
+
+  {SUBCOMP
+  }
+ }
+}

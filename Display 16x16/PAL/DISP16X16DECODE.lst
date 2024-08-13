@@ -1,0 +1,57 @@
+LISTING FOR LOGIC DESCRIPTION FILE: DISP16X16DECODE.pld              Page 1
+
+CUPL(WM): Universal Compiler for Programmable Logic
+Version 5.0a Serial# 60008009
+Copyright (c) 1983, 1998 Logical Devices, Inc.
+Created Tue Aug 13 11:12:18 2024
+
+  1:Name      Disp16x16Decode;
+  2:Partno    ;
+  3:Date      28/12/2023;
+  4:Revision  0.1;
+  5:Designer  PM;
+  6:Company   ;
+  7:Assembly  ;
+  8:Location  ;
+  9:Device    g16v8;
+ 10:
+ 11:
+ 12:/** Inputs **/
+ 13:Pin 1 = LA13;
+ 14:Pin 2 = LA14;
+ 15:Pin 3 = LA15;
+ 16:Pin 4 = LA16;
+ 17:Pin 5 = LA17;
+ 18:Pin 6 = LA18;
+ 19:Pin 7 = LA19;
+ 20:Pin 8 = LA20;
+ 21:Pin 9 = LA21;
+ 22:Pin 12 = nBUFCTL;
+ 23:Pin 13 = nLBS_MEM;
+ 24:
+ 25:/** Outputs **/
+ 26:Pin 19 = MATRIX_EN;
+ 27:Pin 18 = COUNT_EN;
+ 28:Pin 16 = MATRIX_LED;
+ 29:
+ 30:/** Logic equations **/
+ 31:
+ 32:/** Matrix Display 0xC000 to 0xDFFF **/
+ 33:!MATRIX_EN    = !nLBS_MEM & LA15 & LA14 & !LA13;
+ 34:!MATRIX_LED   = !nLBS_MEM & LA15 & LA14 & !LA13;
+ 35:COUNT_EN      = !nLBS_MEM & LA15 & LA14 & !LA13;
+ 36:
+ 37:
+ 38:
+ 39:
+ 40:
+ 41:
+ 42:
+ 43:
+ 44:
+ 45:
+
+
+
+Jedec Fuse Checksum       (1318)
+Jedec Transmit Checksum   (7f44)

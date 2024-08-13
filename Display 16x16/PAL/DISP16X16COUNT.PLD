@@ -1,0 +1,69 @@
+Name      Disp16x16Count;
+Partno    ;
+Date      28/12/2023;
+Revision  0.1;
+Designer  PM;
+Company   ;
+Assembly  ;
+Location  ;
+Device    g16v8;
+
+
+/** Inputs **/
+Pin 1 = CLK;
+Pin 11 = !OE;
+
+/** Outputs **/
+Pin 19 = Q0;
+Pin 18 = Q1;
+Pin 17 = Q2;
+Pin 16 = Q3;
+Pin 15 = Q4;
+Pin 14 = Q5;
+Pin 13 = Q6;
+
+
+
+/** Logic equations **/
+
+Q0.D = !Q0;
+
+Q1.D =	Q1 & !Q0
+	# !Q1 & Q0;
+
+Q2.D = Q2 & !Q0
+	# Q2 & !Q1
+	# !Q2 & Q1 & Q0;
+
+Q3.D = Q3 & !Q0
+	# Q3 & !Q1
+	# Q3 & !Q2
+	# !Q3 & Q2 & Q1 & Q0;
+
+Q4.D = Q4 & !Q0
+	# Q4 & !Q1
+	# Q4 & !Q2
+	# Q4 & !Q3
+	# !Q4 &Q3 & Q2 & Q1 & Q0;
+
+Q5.D = Q5 & !Q0
+	# Q5 & !Q1
+	# Q5 & !Q2
+	# Q5 & !Q3
+	# Q5 & !Q4
+	# !Q5 & Q4 &Q3 & Q2 & Q1 & Q0;
+
+Q6.D = Q6 & !Q0
+	# Q6 & !Q1
+	# Q6 & !Q2
+	# Q6 & !Q3
+	# Q6 & !Q4
+	# Q6 & !Q5
+	# !Q6 & Q5 & Q4 &Q3 & Q2 & Q1 & Q0;
+
+
+
+
+
+
+

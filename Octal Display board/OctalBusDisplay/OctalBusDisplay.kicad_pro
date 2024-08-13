@@ -442,7 +442,7 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "OctalBusDisplay.step",
       "vrml": ""
     },
     "page_layout_descr_file": ""

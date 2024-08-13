@@ -1,0 +1,91 @@
+LISTING FOR LOGIC DESCRIPTION FILE: DISP16X16COUNT.pld               Page 1
+
+CUPL(WM): Universal Compiler for Programmable Logic
+Version 5.0a Serial# 60008009
+Copyright (c) 1983, 1998 Logical Devices, Inc.
+Created Tue Aug 13 11:06:58 2024
+
+  1:Name      Disp16x16Count;
+  2:Partno    ;
+  3:Date      28/12/2023;
+  4:Revision  0.1;
+  5:Designer  PM;
+  6:Company   ;
+  7:Assembly  ;
+  8:Location  ;
+  9:Device    g16v8;
+ 10:
+ 11:
+ 12:/** Inputs **/
+ 13:Pin 1 = CLK;
+ 14:Pin 11 = !OE;
+ 15:
+ 16:/** Outputs **/
+ 17:Pin 19 = Q0;
+ 18:Pin 18 = Q1;
+ 19:Pin 17 = Q2;
+ 20:Pin 16 = Q3;
+ 21:Pin 15 = Q4;
+ 22:Pin 14 = Q5;
+ 23:Pin 13 = Q6;
+ 24:
+ 25:
+ 26:
+ 27:/** Logic equations **/
+ 28:
+ 29:Q0.D = !Q0;
+ 30:
+ 31:Q1.D =  Q1 & !Q0
+ 32:        # !Q1 & Q0;
+ 33:
+ 34:Q2.D = Q2 & !Q0
+ 35:        # Q2 & !Q1
+ 36:        # !Q2 & Q1 & Q0;
+ 37:
+ 38:Q3.D = Q3 & !Q0
+ 39:        # Q3 & !Q1
+ 40:        # Q3 & !Q2
+ 41:        # !Q3 & Q2 & Q1 & Q0;
+ 42:
+ 43:Q4.D = Q4 & !Q0
+ 44:        # Q4 & !Q1
+ 45:        # Q4 & !Q2
+ 46:        # Q4 & !Q3
+ 47:        # !Q4 &Q3 & Q2 & Q1 & Q0;
+ 48:
+ 49:Q5.D = Q5 & !Q0
+ 50:        # Q5 & !Q1
+ 51:        # Q5 & !Q2
+ 52:        # Q5 & !Q3
+ 53:        # Q5 & !Q4
+
+LISTING FOR LOGIC DESCRIPTION FILE: DISP16X16COUNT.pld               Page 2
+
+CUPL(WM): Universal Compiler for Programmable Logic
+Version 5.0a Serial# 60008009
+Copyright (c) 1983, 1998 Logical Devices, Inc.
+Created Tue Aug 13 11:06:58 2024
+
+ 54:        # !Q5 & Q4 &Q3 & Q2 & Q1 & Q0;
+ 55:
+ 56:Q6.D = Q6 & !Q0
+ 57:        # Q6 & !Q1
+ 58:        # Q6 & !Q2
+ 59:        # Q6 & !Q3
+ 60:        # Q6 & !Q4
+ 61:        # Q6 & !Q5
+ 62:        # !Q6 & Q5 & Q4 &Q3 & Q2 & Q1 & Q0;
+ 63:
+ 64:
+ 65:
+ 66:
+ 67:
+ 68:
+ 69:
+ 70:
+ 71:
+
+
+
+Jedec Fuse Checksum       (6d29)
+Jedec Transmit Checksum   (4240)

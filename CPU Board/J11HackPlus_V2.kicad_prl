@@ -66,6 +66,12 @@
     "visible_layers": "0001120_ffffffff",
     "zone_display_mode": 1
   },
+  "git": {
+    "repo_password": "",
+    "repo_type": "",
+    "repo_username": "",
+    "ssh_key": ""
+  },
   "meta": {
     "filename": "J11HackPlus_V2.kicad_prl",
     "version": 3

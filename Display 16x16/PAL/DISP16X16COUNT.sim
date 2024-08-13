@@ -1,0 +1,59 @@
+%SIGNAL
+PIN   1 =  CLK 
+PIN  11 = !OE 
+PIN  19 =  Q0 
+PIN  18 =  Q1 
+PIN  17 =  Q2 
+PIN  16 =  Q3 
+PIN  15 =  Q4 
+PIN  14 =  Q5 
+PIN  13 =  Q6 
+%END
+
+%FIELD
+%END
+
+%EQUATION
+Q0.d  =>
+    !Q0
+
+Q1.d  =>
+    !Q0 & Q1
+  # Q0 & !Q1
+
+Q2.d  =>
+    !Q0 & Q2
+  # !Q1 & Q2
+  # Q0 & Q1 & !Q2
+
+Q3.d  =>
+    !Q0 & Q3
+  # !Q1 & Q3
+  # !Q2 & Q3
+  # Q0 & Q1 & Q2 & !Q3
+
+Q4.d  =>
+    !Q0 & Q4
+  # !Q1 & Q4
+  # !Q2 & Q4
+  # !Q3 & Q4
+  # Q0 & Q1 & Q2 & Q3 & !Q4
+
+Q5.d  =>
+    !Q0 & Q5
+  # !Q1 & Q5
+  # !Q2 & Q5
+  # !Q3 & Q5
+  # !Q4 & Q5
+  # Q0 & Q1 & Q2 & Q3 & Q4 & !Q5
+
+Q6.d  =>
+    !Q0 & Q6
+  # !Q1 & Q6
+  # !Q2 & Q6
+  # !Q3 & Q6
+  # !Q4 & Q6
+  # !Q5 & Q6
+  # Q0 & Q1 & Q2 & Q3 & Q4 & Q5 & !Q6
+
+%END
