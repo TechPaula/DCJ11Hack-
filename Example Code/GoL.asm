@@ -18,7 +18,7 @@
 	; r7  program counter
 	;
 	; Memory map
-	; o000010 -> 001100 = results page (256 words)
+	; o000100 -> 001100 = results page (256 words)
 	; o001100 -> 002100 = calculation page (256 words)
 	; o002500 -> 002777 = Variables
 	;	o002500 = Y position
@@ -31,9 +31,27 @@
 	nop
 	jmp INIT
 
+.org 000100
+RSLT: .word 000000
+
+.org 001100
+CALC: .word 000000
+
+.org 002500
+ADDY: .word 000000			; Y position 
+ADDX: .word 000000			; X position
+VLTL: .word 000000			; value of square top left
+VLTC: .word 000000			; value of square top center
+VLTR: .word 000000			; value of square top right
+VLL:  .word 000000			; value of square to left
+VLR:  .word 000000			; value of square to right
+VLBL: .word 000000			; value of square bottom left
+VLBC: .word 000000			; value of square bottom center
+VLBR: .word 000000			; value of square bottom right
+ITER: .word 000000			; number of iterations
 
 
-.blkb 002772
+.org 003000
 INIT:					; should be at o003000
 	clr r0
 	clr r2
@@ -53,15 +71,29 @@ INIT:					; should be at o003000
 
 MAIN:
 	
-	; do stuff
+	; Figure out where we are in memory
+	mov #ADDY, r4		; Y position memory location
+	mov (r4), r3		; get Y position
+	asl r3				; multiply by 2
+	add #CALC, r3		; add in offset to get Y position in memory
+	
+	mov #ADDX, r4		; X position memory location
+	mov (r4), r2		; get X position
 
+	jsr r6, MULF		; multiply r2 by o000040 to get X address
+	
+	add r2, r3			; add on X offset to address	
+						; r3 now holds address in memory we're looking at!
+						
+	
+	
 
 
 
 	; check if we've reached the ends of the column or row
 	; end of column?
 INCY:
-	mov #002500, r4		; Y position memory location
+	mov #ADDY, r4		; Y position memory location
 	mov (r4), r3		; get Y position
 	inc r3				; increment it
 
@@ -75,7 +107,7 @@ INCX:
 	clr r3				; clear Y position
 	mov r3, (r4) 		; save Y position
 	
-	mov #002502, r4		; X position memory location
+	mov #ADDX, r4		; X position memory location
 	mov (r4), r3		; get X position
 	inc r3				; increment it
 
@@ -87,23 +119,52 @@ INCX:
 	
 ITCOMP: 
 	clr r3				
-	mov #002500, r4		; Y position memory location
+	mov #ADDY, r4		; Y position memory location
 	mov r3, (r4) 		; reset Y
-	mov #002502, r4		; X position memory location
+	mov #ADDX, r4		; X position memory location
 	mov r3, (r4) 		; reset X
 	
 	; MEMCOPY from o001100 to o000100
-	; show the data
 	; delay
+	; jsr r6, SHOWR		; Show results on 16x16 matrix
 	
 	HALT
+
+
+; ----------------------------------------------------
+; copy page from CALC: to RSLT:
+; 	trashes r0 and r1
+CPYP:
+
+; ----------------------------------------------------
+; multiply r2 by o000040
+; 	trashes r0 and r1
+MULF:
+	mov #000040, r0		; we're multiplying by o000040
 	
+	cmp r2, #0000000	; are we multiplying by 0?
+	beq MULE			; if so skip
+ 
+	mov r2, r1			; take a copy
+    clr r2				; clear it
+	
+MULL:
+	add r1, r2			; add original r2 to r2
+	dec r0				; decrease multiply
+	cmp r0, #000000		; have we hit zero?
+	bgt MULL			; if not do it again
+
+MULE:					; if it is, we're done
+	rts r6
+
+
 ; ----------------------------------------------------
 ; Show result on matrix
+; 	trashes r0, r1, r2, r3, r4, r5
 SHOWR:
 	; convert contents of RAM (r4) to display (r5)
 	mov #140000, r5	; dot display address
-	mov #000100, r4 ; results page address
+	mov #RSLT, r4 	; results page address
 	clr r3			; number of columns done
 	clr r2			; number of sets of columns
 	
@@ -184,6 +245,7 @@ DILE:
 	
 ; ----------------------------------------------------
 ; setup memory
+;	trashes r0, r3, r5
 SETUP:
 	clr r3
 ILOP:
@@ -211,6 +273,7 @@ CLRL:						; clear next 256 locations
 
 ; ----------------------------------------------------
 ; show display message
+;	trashes r0,r3,r5
 MDISP:
 	; display message
 	mov #060036, r5
@@ -530,21 +593,22 @@ ISTP:
 
 
 
-
+;	message for text display
 MESG:
-	.word 000107 
-	.word 000141 
-	.word 000155 
-	.word 000145 
-	.word 000040 
-	.word 000117 
-	.word 000146 
-	.word 000040 
 	.word 000114 
 	.word 000151 
-	.word 000146
-	.word 000145	
-	.word 000040
+	.word 000146 
+	.word 000145 
+	.word 000040 
 	.word 000126 
-	.word 000061
-	.word 000040
+	.word 000061 
+	.word 000040 
+	.word 000111 
+	.word 000072 
+	.word 000060 
+	.word 000060 
+	.word 000060 
+	.word 000060 
+	.word 000060 
+	.word 000060
+

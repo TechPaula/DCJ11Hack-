@@ -1880,6 +1880,7 @@ function process_directive(line,pass)
  // .word
  // .hex
  // .ascii
+ // .org     (me trying to add this)
 
  var bProcessed=false;
 
@@ -1934,6 +1935,37 @@ function process_directive(line,pass)
 
   bProcessed=true;
  }
+
+// will this work???
+ if(line.toLowerCase().indexOf(".org") >= 0)
+ {
+  // the .org directive:
+
+  // format: .org exp
+
+  // reserve a block of exp bytes
+
+  tmp_line = tmp_line.replace(/\x2eorg/i,"");
+
+  tmp_line = tmp_line.replace(ptn_del_space,"");
+
+  // just increment the location counter:
+
+  if(tmp_line.length > 0)
+  {
+   g_LocationCounter = calc_expression(tmp_line) & 0xffff;
+  }
+  else
+  {
+   g_bCompileError=true;
+
+   g_LastErrorMessage=".blkb directive - number of bytes to reserve not specified.";
+  } 
+
+  bProcessed=true;
+ }
+// end of my .org hack
+
 
  if(line.toLowerCase().indexOf(".blkb") >= 0)
  {
