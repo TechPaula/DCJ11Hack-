@@ -3,7 +3,7 @@
 
 <head>
 
-<title>PDP-11 Assembly Language Simulator</title>
+<title>PDP-11 Assembly Language Simulator & Generator</title>
 
 <style type="text/css">
 
@@ -16,8 +16,8 @@ textarea, table, input, p, legend
 
 #code_field, #output_field
 {
- width: 490px;
- height: 646px;
+ width: 900px;
+ height: 800px;
  margin: 5px;
 }
 
@@ -33,7 +33,7 @@ textarea, table, input, p, legend
 
 #reg_field
 {
- width: 1015px;
+ width: 1800px;
  margin: 5px;
 }
 
@@ -89,7 +89,7 @@ PC: <input type="text" id="reg_7" size="8">
 
 <legend>Code</legend>
 
-<textarea id="pdp11_code" cols="52" rows="31" spellcheck="false"></textarea>
+<textarea id="pdp11_code" cols="82" rows="50" spellcheck="false"></textarea>
 
 <p>
 <input type="button" value="Compile" onclick="doCompile()">
@@ -97,6 +97,7 @@ PC: <input type="text" id="reg_7" size="8">
 <input type="button" value="Step" onclick="stepCode()">
 <input type="button" value="Watch" onclick="dispWatch()">
 <input type="button" value="View Binary" onclick="viewMachineCode()">
+<input type="button" value="View Upload" onclick="viewUploadCode()">
 <input type="button" value="Clear" onclick="clearCode()">
 </p>
 
@@ -114,7 +115,7 @@ PC: <input type="text" id="reg_7" size="8">
 
 <legend>Output</legend>
 
-<textarea id="txtOut" cols="52" rows="31" spellcheck="false"></textarea>
+<textarea id="txtOut" cols="82" rows="50" spellcheck="false"></textarea>
 
 <p>
 <input type="button" value="Reset Machine" onclick="resetMachine()">
@@ -143,6 +144,8 @@ var g_TNZVC=0;
 
 var g_mainMemory=[];
 
+var g_uploadMemory=[];
+
 var g_LocationCounter=0;
 
 var g_SymbolTable=[];
@@ -150,6 +153,8 @@ var g_SymbolTable=[];
 var g_bShowWatch=false;
 
 var g_bShowMachineCode=false;
+
+var g_bShowUploadCode=false;
 
 var g_bStopPass=false;
 
@@ -162,6 +167,8 @@ var g_bCompileError=false;
 var g_halt_flag=0;
 
 var g_machineCode="";
+
+var g_uploadCode="";
 
 var g_LastTrapMessage="";
 
@@ -197,6 +204,8 @@ function resetMachine()
  }
 
  g_machineCode="";
+ 
+ g_uploadCode="";
 
  clearRegisters();
 
@@ -205,6 +214,8 @@ function resetMachine()
  g_bShowWatch=false;
 
  g_bShowMachineCode=false;
+ 
+ g_bShowUploadCode=false;
 
  g_bStopPass=false;
 
@@ -575,6 +586,8 @@ function jumpTo()
  g_bShowWatch=false;
 
  g_bShowMachineCode=false;
+ 
+ g_bShowUploadCode=false;
 
  var addr=getDispAddr();
 
@@ -595,6 +608,8 @@ function jumpBack()
  g_bShowWatch=false;
 
  g_bShowMachineCode=false;
+
+ g_bShowUploadCode=false;
 
  var addr = getDispAddr();
 
@@ -623,6 +638,8 @@ function jumpForward()
  g_bShowWatch=false;
 
  g_bShowMachineCode=false;
+ 
+ g_bShowUploadCode=false; 
 
  var addr = getDispAddr();
 
@@ -722,14 +739,14 @@ function dispMemory(addr)
 
  var oct_val;
 
- for(i=0;i<30;i++)
+ for(i=0;i<48;i++)
  {
   if(addr > 0177777)
   {
    addr = 0;
   }
 
-  var taddr = (addr + 60);
+  var taddr = (addr + 96);
 
   if(taddr >= 0200000) taddr -= 0200000;
 
@@ -751,12 +768,36 @@ function dispMemory(addr)
 
   disp += printOctValue(oct_val) + " | ";
 
-  taddr += 60;
+  taddr += 96;
 
   if(taddr >= 0200000) taddr -= 0200000;
 
   // column 3:
 
+  disp += printOctValue(taddr) + "  ";
+
+  oct_val = bytesToWord(g_mainMemory[taddr+1],g_mainMemory[taddr]);
+
+  disp += printOctValue(oct_val) + " | ";
+
+  taddr += 96;
+
+  if(taddr >= 0200000) taddr -= 0200000;
+
+  // column 3:
+
+  disp += printOctValue(taddr) + "  ";
+
+  oct_val = bytesToWord(g_mainMemory[taddr+1],g_mainMemory[taddr]);
+
+  disp += printOctValue(oct_val) + " | ";
+
+  taddr += 96;
+
+  if(taddr >= 0200000) taddr -= 0200000;
+
+
+  // column 4:
   disp += printOctValue(taddr) + "  ";
 
   oct_val = bytesToWord(g_mainMemory[taddr+1],g_mainMemory[taddr]);
@@ -779,14 +820,14 @@ function dispMemoryHex(addr)
 
  var hex_val;
 
- for(i=0;i<30;i++)
+ for(i=0;i<48;i++)
  {
   if(addr > 0xffff)
   {
    addr = 0;
   }
 
-  var taddr = (addr + 60);
+  var taddr = (addr + 96);
 
   if(taddr >= 0x10000) taddr -= 0x10000;
 
@@ -808,7 +849,7 @@ function dispMemoryHex(addr)
 
   disp += printHexValue(hex_val) + " | ";
 
-  taddr += 60;
+  taddr += 96;
 
   if(taddr >= 0x10000) taddr -= 0x10000;
 
@@ -820,11 +861,23 @@ function dispMemoryHex(addr)
 
   disp += printHexValue(hex_val) + " | ";
 
-  taddr += 60;
+  taddr += 96;
 
   if(taddr >= 0x10000) taddr -= 0x10000;
 
   // column 4:
+
+  disp += printHexValue(taddr) + "  ";
+
+  hex_val = bytesToWord(g_mainMemory[taddr+1],g_mainMemory[taddr]);
+
+  disp += printHexValue(hex_val) + " | ";
+
+  taddr += 96;
+
+  if(taddr >= 0x10000) taddr -= 0x10000;
+
+  // column 5:
 
   disp += printHexValue(taddr) + "  ";
 
@@ -1326,6 +1379,10 @@ function stepCode()
   {
    viewMachineCode();
   }
+  else if(g_bShowUploadCode)
+  {
+   viewUploadCode();
+  }
   else
   {
    jumpTo();
@@ -1341,10 +1398,27 @@ function viewMachineCode()
 
  g_bShowMachineCode=true;
 
+ g_bShowUploadCode=false;
+
  document.getElementById("txtOut").value = g_machineCode;
 }
 
 // +++++++++++++++++++++++++++++++++++++++++++
+//  This shows the output file format I need
+
+function viewUploadCode()
+{
+ g_bShowWatch=false;
+
+ g_bShowMachineCode=false;
+
+ g_bShowUploadCode=true;
+
+ document.getElementById("txtOut").value = g_uploadCode;
+}
+
+// +++++++++++++++++++++++++++++++++++++++++++
+//  Added uploadCode (UL) so I can save time
 
 function addToMachineCode(addr,b_append)
 {
@@ -1353,8 +1427,10 @@ function addToMachineCode(addr,b_append)
  var tmp = bytesToWord(g_mainMemory[addr+1],g_mainMemory[addr]);
 
  var tstr = printOctValue(addr) + "  ";
+ var tstrUL = printOctValue(addr) + "/";
 
  tstr += printOctValue(tmp);
+ tstrUL += printOctValue(tmp);
 
  // append the original line of code:
 
@@ -1366,8 +1442,10 @@ function addToMachineCode(addr,b_append)
  }
 
  tstr += "\r\n";
+ tstrUL += "\r\n";
 
  g_machineCode += tstr;
+ g_uploadCode += tstrUL;
 }
 
 // +++++++++++++++++++++++++++++++++++++++++++
@@ -1379,6 +1457,8 @@ function dispWatch()
  g_bShowWatch=true;
 
  g_bShowMachineCode=false;
+ 
+ g_bShowUploadCode=false; 
 
  var symbol_id;
 
